@@ -1,0 +1,3107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Counting Assistance">
+<meta name="theme-color" content="#0b0f22">
+<title>Counting Assistance by Pavel</title>
+<style>
+  :root {
+    --navy: #0b0f22;
+    --navy-2: #141a35;
+    --gold: #e6bd5c;
+    --gold-soft: #f0d28b;
+    --text: #f1f2f7;
+    --text-dim: #7d84a0;
+    --line: #202849;
+    --line-soft: #171d38;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; overscroll-behavior: none; }
+  body {
+    background: radial-gradient(120% 90% at 50% -10%, #171f45 0%, var(--navy) 55%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+  }
+  .screen {
+    height: 100vh;
+    height: 100dvh;
+    display: none;
+    flex-direction: column;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .screen.active { display: flex; }
+
+  /* ---------- shared header ---------- */
+  header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 12px;
+    gap: 10px;
+  }
+  .hdr-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .title-block { line-height: 1.15; min-width: 0; }
+  .title-block .t1 { font-size: 18px; font-weight: 700; letter-spacing: 0.4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title-block .t1 .accent { color: var(--gold); font-weight: 800; }
+  .title-block .t2 { font-size: 11px; color: var(--text-dim); letter-spacing: 0.4px; margin-top: 2px; }
+  .title-block .t2 .dot-sep { margin: 0 6px; opacity: 0.5; }
+  .title-block .t2 .by-pavel { color: var(--gold); font-weight: 700; letter-spacing: 0.6px; }
+
+  .hdr-actions { display: flex; gap: 10px; flex-shrink: 0; }
+  .hdr-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim);
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .hdr-btn:active { background: var(--navy-2); color: var(--text); }
+  .hdr-btn svg { width: 14px; height: 14px; }
+
+  .hdr-btn-wa { color: #2fd66b; border-color: rgba(47, 214, 107, 0.4); }
+  .hdr-btn-wa:active { background: rgba(47, 214, 107, 0.15); color: #2fd66b; }
+
+  /* while capturing a screenshot for sharing, hide the action buttons
+     so the shared image only shows the counted data */
+  .screen.capturing .hdr-actions,
+  .screen.capturing .back-btn { visibility: hidden; }
+
+  .divider {
+    flex: 0 0 auto;
+    height: 1px;
+    margin: 0 16px;
+    background: linear-gradient(90deg, transparent, var(--line) 15%, var(--line) 85%, transparent);
+  }
+
+  /* ---------- home screen ---------- */
+  .home-header { padding: 22px 20px 16px; flex: 0 0 auto; }
+  .home-header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .home-header .t1 { font-size: 22px; font-weight: 800; letter-spacing: 0.3px; }
+  .home-header .t1 .accent { color: var(--gold); }
+  .home-header .t2 { font-size: 12px; color: var(--text-dim); margin-top: 4px; letter-spacing: 0.3px; }
+  .home-header .t2 .by-pavel { color: var(--gold); font-weight: 700; letter-spacing: 0.6px; }
+
+  .menu {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 6px 20px 20px;
+    min-height: 0;
+    justify-content: center;
+  }
+  .menu-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 18px;
+    background: linear-gradient(135deg, #1a2149, #10142c);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    color: var(--text);
+    text-align: left;
+  }
+  .menu-card:active { border-color: var(--gold); background: linear-gradient(135deg, #202a5a, #12163a); }
+  .menu-icon {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(230, 189, 92, 0.12);
+    color: var(--gold);
+  }
+  .menu-icon svg { width: 22px; height: 22px; }
+  .menu-text { flex: 1; min-width: 0; }
+  .menu-text .m-title { font-size: 15.5px; font-weight: 700; letter-spacing: 0.2px; }
+  .menu-text .m-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+  .menu-chevron { color: var(--text-dim); flex-shrink: 0; }
+  .menu-chevron svg { width: 16px; height: 16px; }
+
+  /* ---------- money counter rows ---------- */
+  .rows {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 2px 16px 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .row {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--line-soft);
+    transition: background 0.15s;
+  }
+  .row:last-child { border-bottom: none; }
+  .row:focus-within { background: rgba(232, 193, 94, 0.05); }
+
+  .denom {
+    width: 62px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.18) inset;
+  }
+  .dot.note { width: 15px; height: 9px; border-radius: 2.5px; }
+  .denom-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.2px;
+  }
+
+  .mid { flex: 1; display: flex; justify-content: center; }
+  .count {
+    width: 64px;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    padding: 4px 0;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .count::placeholder { color: #3a4370; font-weight: 500; }
+  .count:focus { border-color: var(--gold); }
+
+  .sum {
+    width: 82px;
+    flex-shrink: 0;
+    text-align: right;
+    font-size: 14px;
+    font-weight: 600;
+    color: #3f4874;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.15s;
+  }
+  .sum.active { color: var(--gold-soft); font-weight: 700; }
+
+  .empty-msg {
+    flex: 1 1 auto;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+    padding: 0 16px;
+    text-align: center;
+  }
+
+  .total-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 16px 18px;
+    margin: 6px 12px calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(135deg, #1a2149, #10142c);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+  }
+  .total-bar .label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .total-bar .value {
+    font-family: Georgia, "Times New Roman", ui-serif, serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- daily count rows ---------- */
+  .d-rows {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 4px 14px 0;
+    min-height: 0;
+    overflow: hidden;
+    gap: 2px;
+  }
+  .d-row {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .d-row:last-child { border-bottom: none; }
+
+  .item-label {
+    width: 92px;
+    flex-shrink: 0;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text);
+  }
+
+  .boxes-scroll {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 4px 2px;
+  }
+  .box {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    color: var(--text);
+    outline: none;
+    padding: 0;
+    letter-spacing: 0.5px;
+    transition: border-color 0.15s;
+  }
+  .box::placeholder { color: #2c3663; font-weight: 500; }
+  .box:focus { border-color: var(--gold); }
+
+  .total-chip {
+    flex-shrink: 0;
+    min-width: 52px;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13.5px;
+    font-weight: 700;
+    background: var(--navy-2);
+    color: var(--text-dim);
+    border: 1px solid var(--line);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .total-chip.active { color: var(--gold); border-color: #3a3352; }
+
+  .ea-box {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    color: var(--text);
+    outline: none;
+    padding: 0;
+    letter-spacing: 0.5px;
+    transition: border-color 0.15s;
+  }
+  .ea-box::placeholder { color: #2c3663; font-weight: 500; }
+  .ea-box:focus { border-color: var(--gold); }
+  .ea-spacer { width: 34px; height: 34px; flex-shrink: 0; }
+
+  .ea-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    flex-shrink: 0;
+    width: 34px;
+  }
+  .ea-tag {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .row-reset {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim);
+    padding: 0;
+  }
+  .row-reset:active { background: var(--navy-2); color: var(--text); }
+  .row-reset svg { width: 12px; height: 12px; }
+
+  .note-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 16px calc(14px + env(safe-area-inset-bottom));
+    padding: 13px 14px;
+    background: linear-gradient(135deg, rgba(230, 189, 92, 0.14), rgba(230, 189, 92, 0.03) 60%), linear-gradient(135deg, #1a2149, #10142c);
+    border: 1px solid rgba(230, 189, 92, 0.3);
+    border-radius: 16px;
+    transition: background 0.2s, border-color 0.2s, padding 0.2s;
+  }
+  .note-bar.hidden {
+    background: linear-gradient(135deg, #1a2149, #10142c);
+    border-color: var(--line);
+  }
+  .note-bar.hidden .note-icon { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+  .note-bar.hidden .note-text { visibility: hidden; }
+  .note-bar.hidden .note-label { color: var(--text-dim); }
+  .note-icon {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(230, 189, 92, 0.16);
+    color: var(--gold);
+    transition: background 0.2s, color 0.2s;
+  }
+  .note-icon svg { width: 18px; height: 18px; }
+  .note-body { flex: 1 1 auto; min-width: 0; }
+  .note-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    margin-bottom: 3px;
+    transition: color 0.2s;
+  }
+  .note-text {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.1px;
+    line-height: 1.5;
+    white-space: pre-line;
+  }
+  .note-toggle {
+    align-self: center;
+    width: 28px; height: 28px;
+    flex-shrink: 0;
+  }
+  .note-toggle svg { width: 13px; height: 13px; }
+
+  .notif-banner {
+    display: none;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+    margin: 0 16px calc(14px + env(safe-area-inset-bottom));
+    padding: 11px 12px 11px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed var(--line);
+    border-radius: 14px;
+  }
+  .notif-banner.show { display: flex; }
+  .notif-text { flex: 1; font-size: 12px; color: var(--text-dim); line-height: 1.35; }
+  .notif-text b { color: var(--text); font-weight: 700; }
+  .notif-btn {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #10142c;
+    background: var(--gold);
+    border: none;
+    border-radius: 10px;
+  }
+  .notif-btn:active { opacity: 0.85; }
+
+  .checklist-banner {
+    display: none;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+    margin: 0 16px calc(14px + env(safe-area-inset-bottom));
+    padding: 12px 12px 12px 14px;
+    background: linear-gradient(135deg, rgba(230, 189, 92, 0.16), rgba(230, 189, 92, 0.04));
+    border: 1px solid rgba(230, 189, 92, 0.4);
+    border-radius: 14px;
+  }
+  .checklist-banner.show { display: flex; }
+  .checklist-banner .notif-icon {
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(230, 189, 92, 0.18);
+    color: var(--gold);
+  }
+  .checklist-banner .notif-icon svg { width: 16px; height: 16px; }
+  .checklist-banner .notif-text { font-size: 13px; color: var(--text); }
+  .checklist-banner .notif-text b { color: var(--gold); }
+  .notif-dismiss {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+  }
+  .notif-dismiss svg { width: 14px; height: 14px; }
+
+  /* ---------- history ---------- */
+  .reminders-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 14px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .reminder-card {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: linear-gradient(135deg, #1a2149, #10142c);
+    overflow: hidden;
+  }
+  .reminder-card.today { border-color: var(--gold); }
+  .reminder-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    text-align: left;
+  }
+  .reminder-day-name { font-size: 15px; font-weight: 700; letter-spacing: 0.2px; }
+  .reminder-day-name .today-tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--navy);
+    background: var(--gold);
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin-left: 8px;
+    letter-spacing: 0.3px;
+    vertical-align: middle;
+  }
+  .reminder-chevron { color: var(--text-dim); flex-shrink: 0; transition: transform 0.15s; }
+  .reminder-chevron svg { width: 16px; height: 16px; }
+  .reminder-card.open .reminder-chevron { transform: rotate(90deg); }
+  .reminder-card-body {
+    display: none;
+    padding: 0 16px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    white-space: pre-line;
+  }
+  .reminder-card.open .reminder-card-body { display: block; }
+  .reminder-card-empty { color: var(--text-dim); font-style: italic; }
+
+  /* ---------- exchange money rows ---------- */
+  .ex-rows {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 2px 16px 28px;
+    display: flex;
+    flex-direction: column;
+  }
+  .ex-rows > * { flex-shrink: 0; }
+  .ex-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    padding: 16px 2px 6px;
+  }
+  .ex-section-title:first-child { padding-top: 12px; }
+  .ex-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 2px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .ex-row-label { font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .ex-row-sub { font-size: 10.5px; color: var(--text-dim); font-weight: 500; margin-top: 1px; }
+  .ex-input {
+    width: 72px;
+    height: 34px;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    color: var(--text);
+    outline: none;
+    padding: 0;
+    letter-spacing: 0.5px;
+    transition: border-color 0.15s;
+  }
+  .ex-input::placeholder { color: #2c3663; font-weight: 500; }
+  .ex-input:focus { border-color: var(--gold); }
+
+  /* rolls get a distinct accent so they're never confused with singles */
+  .ex-row--roll { border-left: 2px solid var(--roll-color, #7c9cff); padding-left: 8px; background: rgba(124, 156, 255, 0.05); }
+  .ex-row--roll .ex-row-label { color: #a9bcff; }
+  .ex-row--roll .ex-input { border-bottom-color: rgba(124, 156, 255, 0.5); }
+  .ex-row--roll .ex-input:focus { border-color: #a9bcff; }
+
+  /* summary card at the top of Cash Journal showing the saved Sales Count,
+     expandable to reveal the full note/coin breakdown for that day */
+  .ex-sales-summary {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px;
+    margin: 10px 0 4px;
+    background: linear-gradient(135deg, #17311f, #10142c);
+    border: 1px solid rgba(47, 214, 107, 0.35);
+    border-radius: 14px;
+    cursor: pointer;
+  }
+  .ex-sales-summary-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .ex-sales-summary-right { display: flex; align-items: center; gap: 8px; }
+  .ex-sales-chevron { width: 15px; height: 15px; color: #7de3a0; transition: transform 0.2s; flex-shrink: 0; }
+  .ex-sales-chevron svg { width: 100%; height: 100%; }
+  .ex-sales-summary.expanded .ex-sales-chevron { transform: rotate(180deg); }
+  .ex-sales-summary .label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #7de3a0;
+  }
+  .ex-sales-summary .value {
+    font-family: Georgia, "Times New Roman", ui-serif, serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: #7de3a0;
+    font-variant-numeric: tabular-nums;
+  }
+  .ex-sales-summary .value.empty { color: var(--text-dim); font-family: inherit; font-size: 13px; font-weight: 600; }
+  .ex-sales-summary-drop {
+    display: none;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(47, 214, 107, 0.25);
+  }
+  .ex-sales-summary.expanded .ex-sales-summary-drop { display: block; }
+  .ex-sales-summary .hd-row { border-bottom: 1px solid rgba(47, 214, 107, 0.12); }
+  .ex-sales-summary .hd-value { color: #7de3a0; }
+
+  /* Cash Journal comparison table: Kasse | Exchange | Total per denom */
+  .cj-cols-header {
+    display: grid;
+    grid-template-columns: 1fr 40px 40px 70px;
+    gap: 6px;
+    padding: 4px 4px 0;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .cj-col-kasse { text-align: right; color: #4fd1c5; }
+  .cj-col-exchange { text-align: right; color: var(--gold-soft); }
+  .cj-col-total { text-align: right; color: #7de3a0; }
+  .cj-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 40px 70px;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .cj-row--roll { border-left: 2px solid #7c9cff; padding-left: 8px; background: rgba(124, 156, 255, 0.05); }
+  .cj-row--roll .cj-row-label { color: #a9bcff; }
+  .cj-row-label { font-size: 13.5px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .cj-auto-badge {
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--navy);
+    background: var(--gold-soft);
+    padding: 1px 5px;
+    border-radius: 5px;
+  }
+  .cj-val { text-align: right; font-variant-numeric: tabular-nums; }
+  .cj-val-kasse { font-size: 10.5px; font-weight: 500; color: #4fd1c5; opacity: 0.85; }
+  .cj-val-exchange { font-size: 10.5px; font-weight: 500; color: var(--gold-soft); opacity: 0.85; }
+  .cj-val-total { font-size: 17px; font-weight: 800; color: #ffffff; }
+
+  /* bottom-of-page grand total: cash on hand + weekly sales */
+  .ex-store-total-box {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 18px;
+    margin: 6px 0 calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(135deg, #1a2149, #10142c);
+    border: 1px solid var(--gold);
+    border-radius: 16px;
+  }
+  .ex-store-total-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+  .ex-store-total-line span:last-child { font-variant-numeric: tabular-nums; color: var(--text); font-weight: 700; }
+  .ex-store-total-grand {
+    padding-top: 8px;
+    margin-top: 2px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+  }
+  .ex-store-total-grand span:last-child {
+    font-family: Georgia, "Times New Roman", ui-serif, serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .ex-name-row { flex-direction: column; align-items: stretch; gap: 6px; }
+  .ex-name-input {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+  .ex-name-input:focus { border-color: var(--gold); }
+  .ex-name-input::placeholder { color: var(--text-dim); }
+  .ex-cash-total-row {
+    flex-shrink: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 14px 16px;
+    margin: 12px 0 20px;
+    background: linear-gradient(135deg, #1a2149, #10142c);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+  }
+  .ex-cash-total-row .label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .ex-cash-total-row .value {
+    font-family: Georgia, "Times New Roman", ui-serif, serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+  .ex-export-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin: 4px 0 6px;
+    padding: 13px 16px;
+    background: rgba(230, 189, 92, 0.08);
+    border: 1px solid rgba(230, 189, 92, 0.4);
+    border-radius: 12px;
+    color: var(--gold-soft);
+    font-size: 13.5px;
+    font-weight: 700;
+    font-family: inherit;
+    letter-spacing: 0.2px;
+  }
+  .ex-export-btn:active { background: rgba(230, 189, 92, 0.16); }
+  .ex-export-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .daily-balance-row {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    padding: 2px 2px 10px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    min-height: 76px;
+    flex-shrink: 0;
+  }
+  .daily-balance-row::-webkit-scrollbar { display: none; }
+  .day-card {
+    flex: 0 0 auto;
+    width: 54px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 7px 3px 8px;
+  }
+  .day-card.is-today { border-color: var(--gold); }
+  .day-card-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.25;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+  .day-card.is-today .day-card-label { color: var(--gold-soft); }
+  .day-card-input {
+    width: 100%;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 3px 0 2px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .day-card-input::placeholder { color: #2c3663; font-weight: 500; }
+  .day-card-input:focus { border-color: var(--gold); }
+  .day-card-input--synced { color: var(--gold-soft); border-bottom-color: rgba(230, 189, 92, 0.4); }
+  .ex-daily-total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 2px 4px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    border-top: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .ex-daily-total-row .ex-row-label { color: var(--gold-soft); }
+  .ex-daily-total-value { font-size: 16px; font-weight: 800; color: var(--gold-soft); font-variant-numeric: tabular-nums; }
+  .ex-daily-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .ex-daily-title-row .ex-section-title { padding: 0; }
+  .ex-daily-reset-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    margin: 12px 0 4px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    font-family: inherit;
+  }
+  .ex-daily-reset-btn:active { background: rgba(255,255,255,0.08); }
+  .ex-daily-reset-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+  .history-tabs {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 16px 4px;
+  }
+  .history-tab {
+    flex: 1 1 28%;
+    padding: 9px 0;
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: var(--text-dim);
+    background: var(--navy-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .history-tab.active { color: var(--navy); background: var(--gold); border-color: var(--gold); }
+
+  .history-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .history-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 8px 8px 16px;
+    background: linear-gradient(135deg, #1a2149, #10142c);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    color: var(--text);
+  }
+  .history-row:active { border-color: var(--gold); }
+  .history-row-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    background: none;
+    border: none;
+    color: inherit;
+    text-align: left;
+  }
+  .history-date-block { min-width: 0; }
+  .history-date { font-size: 14.5px; font-weight: 700; }
+  .history-time { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .history-value { font-family: Georgia, "Times New Roman", ui-serif, serif; font-size: 17px; font-weight: 700; color: var(--gold); flex-shrink: 0; }
+  .history-chevron { color: var(--text-dim); flex-shrink: 0; }
+  .history-chevron svg { width: 16px; height: 16px; }
+  .history-delete {
+    flex-shrink: 0;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim);
+    padding: 0;
+  }
+  .history-delete:active { background: rgba(220, 90, 80, 0.15); color: #e06a5f; border-color: rgba(220, 90, 80, 0.4); }
+  .history-delete svg { width: 14px; height: 14px; }
+
+  .history-detail-rows {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 6px 16px 0;
+  }
+  .hd-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 14px;
+  }
+  .hd-row:last-child { border-bottom: none; }
+  .hd-label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .hd-value { font-weight: 700; color: var(--gold-soft); font-variant-numeric: tabular-nums; }
+
+  /* ---------- clickable date label ---------- */
+  .date-pill {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .date-pill:active { color: var(--gold); }
+
+  /* ---------- date picker modal ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 6, 20, 0.6);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 300;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-sheet {
+    width: 100%;
+    max-width: 440px;
+    background: var(--navy-2);
+    border: 1px solid var(--line);
+    border-bottom: none;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 18px calc(18px + env(safe-area-inset-bottom));
+  }
+  .modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 16px;
+    letter-spacing: 0.2px;
+  }
+  .modal-selects { display: flex; gap: 10px; margin-bottom: 18px; }
+  .modal-select {
+    flex: 1;
+    padding: 12px 10px;
+    border-radius: 12px;
+    background: var(--navy);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+  }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-btn {
+    flex: 1;
+    padding: 13px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .modal-btn-apply { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+  .modal-btn:active { opacity: 0.85; }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 92px;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--navy-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ================= HOME ================= -->
+<div class="screen active" id="view-home">
+  <div class="home-header">
+    <div class="home-header-top">
+      <div class="title-wrap">
+        <div class="t1">Counting <span class="accent">Assistance</span></div>
+        <div class="t2"><span class="by-pavel">by Pavel</span><span class="dot-sep">&middot;</span><span id="dateLabel-home"></span></div>
+      </div>
+      <button class="hdr-btn" id="resetAllBtn-home" aria-label="Reset everything">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="menu">
+    <button class="menu-card" data-goto="sales">
+      <div class="menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div class="menu-text">
+        <div class="m-title">Sales Count</div>
+        <div class="m-sub">Count cash from sales</div>
+      </div>
+      <div class="menu-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+    </button>
+    <button class="menu-card" data-goto="kasse">
+      <div class="menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+      <div class="menu-text">
+        <div class="m-title">Kasse Count</div>
+        <div class="m-sub">Count cash in the register</div>
+      </div>
+      <div class="menu-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+    </button>
+    <button class="menu-card" data-goto="daily">
+      <div class="menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="menu-text">
+        <div class="m-title">Daily Count</div>
+        <div class="m-sub">Track today's items</div>
+      </div>
+      <div class="menu-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+    </button>
+    <button class="menu-card" data-goto="exchangemoney">
+      <div class="menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg></div>
+      <div class="menu-text">
+        <div class="m-title">Exchange Money</div>
+        <div class="m-sub">Count safe + base exchange money</div>
+      </div>
+      <div class="menu-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+    </button>
+    <button class="menu-card" data-goto="cashjournal">
+      <div class="menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
+      <div class="menu-text">
+        <div class="m-title">Cash Journal</div>
+        <div class="m-sub">Exchange money, sales &amp; kasse overview</div>
+      </div>
+      <div class="menu-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+    </button>
+    <button class="menu-card" data-goto="history">
+      <div class="menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+      <div class="menu-text">
+        <div class="m-title">History</div>
+        <div class="m-sub">See past saved counts by date</div>
+      </div>
+      <div class="menu-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+    </button>
+  </div>
+  <div class="note-bar" id="noteBar-home">
+    <div class="note-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </div>
+    <div class="note-body">
+      <div class="note-label">Today&rsquo;s Reminder</div>
+      <span class="note-text" id="noteText-home"></span>
+    </div>
+    <button class="hdr-btn note-toggle" id="noteViewAllBtn-home" aria-label="View all days" data-goto="reminders-all">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </button>
+    <button class="hdr-btn note-toggle" id="noteToggleBtn-home" aria-label="Hide note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+  </div>
+  <div class="notif-banner" id="notifBanner-home">
+    <div class="notif-text">Get a phone notification at <b>11:45</b> when this page is open</div>
+    <button class="notif-btn" id="notifEnableBtn-home">Enable</button>
+  </div>
+  <div class="checklist-banner" id="checklistBanner-home">
+    <div class="notif-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    </div>
+    <div class="notif-text"><b>Reminder:</b> Complete the Checklist</div>
+    <button class="notif-dismiss" id="checklistDismissBtn-home" aria-label="Dismiss">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ================= SALES COUNT (money counter) ================= -->
+<div class="screen" id="view-sales">
+  <header>
+    <div class="hdr-left">
+      <button class="hdr-btn back-btn" aria-label="Back" data-back>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="title-block">
+        <div class="t1">Sales <span class="accent">Count</span></div>
+        <div class="t2"><span class="by-pavel">by Pavel</span><span class="dot-sep">&middot;</span><button type="button" class="date-pill" id="dateLabel-sales" aria-label="Change date"></button></div>
+      </div>
+    </div>
+    <div class="hdr-actions">
+      <button class="hdr-btn" id="saveBtn-sales" aria-label="Save">
+        <svg id="saveIcon-sales" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+      </button>
+      <button class="hdr-btn" id="resetBtn-sales" aria-label="Reset">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+      <button class="hdr-btn hdr-btn-wa" id="shareBtn-sales" aria-label="Share to WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.87.51 3.62 1.4 5.12L2 22l4.99-1.36C8.44 21.49 10.17 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2Zm0 18.2c-1.66 0-3.2-.48-4.5-1.31l-.32-.2-3.02.82.83-2.94-.21-.31A8.17 8.17 0 0 1 3.8 12c0-4.53 3.68-8.2 8.2-8.2s8.2 3.67 8.2 8.2-3.67 8.2-8.2 8.2Zm4.5-6.14c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.96-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.7-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.06 0 1.22.88 2.4 1.01 2.56.12.17 1.73 2.64 4.2 3.7.59.25 1.05.4 1.4.51.59.19 1.13.16 1.55.1.47-.07 1.46-.6 1.67-1.17.2-.58.2-1.08.14-1.18-.06-.1-.22-.16-.47-.28Z"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="divider"></div>
+  <div class="rows" id="rows-sales"></div>
+  <div class="empty-msg" id="emptyMsg-sales">Nothing entered yet</div>
+  <div class="total-bar">
+    <span class="label">Total</span>
+    <span class="value" id="totalVal-sales">0.00€</span>
+  </div>
+</div>
+
+<!-- ================= KASSE COUNT (money counter) ================= -->
+<div class="screen" id="view-kasse">
+  <header>
+    <div class="hdr-left">
+      <button class="hdr-btn back-btn" aria-label="Back" data-back>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="title-block">
+        <div class="t1">Kasse <span class="accent">Count</span></div>
+        <div class="t2"><span class="by-pavel">by Pavel</span><span class="dot-sep">&middot;</span><button type="button" class="date-pill" id="dateLabel-kasse" aria-label="Change date"></button></div>
+      </div>
+    </div>
+    <div class="hdr-actions">
+      <button class="hdr-btn" id="saveBtn-kasse" aria-label="Save">
+        <svg id="saveIcon-kasse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+      </button>
+      <button class="hdr-btn" id="resetBtn-kasse" aria-label="Reset">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+      <button class="hdr-btn hdr-btn-wa" id="shareBtn-kasse" aria-label="Share to WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.87.51 3.62 1.4 5.12L2 22l4.99-1.36C8.44 21.49 10.17 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2Zm0 18.2c-1.66 0-3.2-.48-4.5-1.31l-.32-.2-3.02.82.83-2.94-.21-.31A8.17 8.17 0 0 1 3.8 12c0-4.53 3.68-8.2 8.2-8.2s8.2 3.67 8.2 8.2-3.67 8.2-8.2 8.2Zm4.5-6.14c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.96-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.7-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.06 0 1.22.88 2.4 1.01 2.56.12.17 1.73 2.64 4.2 3.7.59.25 1.05.4 1.4.51.59.19 1.13.16 1.55.1.47-.07 1.46-.6 1.67-1.17.2-.58.2-1.08.14-1.18-.06-.1-.22-.16-.47-.28Z"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="divider"></div>
+  <div class="rows" id="rows-kasse"></div>
+  <div class="empty-msg" id="emptyMsg-kasse">Nothing entered yet</div>
+  <div class="total-bar">
+    <span class="label">Total</span>
+    <span class="value" id="totalVal-kasse">0.00€</span>
+  </div>
+</div>
+
+<!-- ================= DAILY COUNT ================= -->
+<div class="screen" id="view-daily">
+  <header>
+    <div class="hdr-left">
+      <button class="hdr-btn back-btn" aria-label="Back" data-back>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="title-block">
+        <div class="t1">Daily <span class="accent">Count</span></div>
+        <div class="t2"><span class="by-pavel">by Pavel</span><span class="dot-sep">&middot;</span><button type="button" class="date-pill" id="dateLabel-daily" aria-label="Change date"></button></div>
+      </div>
+    </div>
+    <div class="hdr-actions">
+      <button class="hdr-btn" id="saveBtn-daily" aria-label="Save">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+      </button>
+      <button class="hdr-btn" id="resetAllBtn-daily" aria-label="Reset all">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+      <button class="hdr-btn hdr-btn-wa" id="shareBtn-daily" aria-label="Share to WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.87.51 3.62 1.4 5.12L2 22l4.99-1.36C8.44 21.49 10.17 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2Zm0 18.2c-1.66 0-3.2-.48-4.5-1.31l-.32-.2-3.02.82.83-2.94-.21-.31A8.17 8.17 0 0 1 3.8 12c0-4.53 3.68-8.2 8.2-8.2s8.2 3.67 8.2 8.2-3.67 8.2-8.2 8.2Zm4.5-6.14c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.96-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.7-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.06 0 1.22.88 2.4 1.01 2.56.12.17 1.73 2.64 4.2 3.7.59.25 1.05.4 1.4.51.59.19 1.13.16 1.55.1.47-.07 1.46-.6 1.67-1.17.2-.58.2-1.08.14-1.18-.06-.1-.22-.16-.47-.28Z"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="divider"></div>
+  <div class="d-rows" id="rows-daily"></div>
+</div>
+
+<!-- ================= EXCHANGE MONEY ================= -->
+<div class="screen" id="view-exchangemoney">
+  <header>
+    <div class="hdr-left">
+      <button class="hdr-btn back-btn" aria-label="Back" data-back>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="title-block">
+        <div class="t1">Exchange <span class="accent">Money</span></div>
+        <div class="t2"><span class="by-pavel">by Pavel</span><span class="dot-sep">&middot;</span><button type="button" class="date-pill" id="dateLabel-exchange" aria-label="Change date"></button></div>
+      </div>
+    </div>
+    <div class="hdr-actions">
+      <button class="hdr-btn" id="copyBtn-exchange" aria-label="Copy to another date">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+      <button class="hdr-btn" id="saveBtn-exchange" aria-label="Save">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+      </button>
+      <button class="hdr-btn" id="resetBtn-exchange" aria-label="Reset">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+      <button class="hdr-btn hdr-btn-wa" id="shareBtn-exchange" aria-label="Share to WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.87.51 3.62 1.4 5.12L2 22l4.99-1.36C8.44 21.49 10.17 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2Zm0 18.2c-1.66 0-3.2-.48-4.5-1.31l-.32-.2-3.02.82.83-2.94-.21-.31A8.17 8.17 0 0 1 3.8 12c0-4.53 3.68-8.2 8.2-8.2s8.2 3.67 8.2 8.2-3.67 8.2-8.2 8.2Zm4.5-6.14c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.96-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.7-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.06 0 1.22.88 2.4 1.01 2.56.12.17 1.73 2.64 4.2 3.7.59.25 1.05.4 1.4.51.59.19 1.13.16 1.55.1.47-.07 1.46-.6 1.67-1.17.2-.58.2-1.08.14-1.18-.06-.1-.22-.16-.47-.28Z"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="divider"></div>
+  <div class="ex-rows" id="rows-exchange"></div>
+</div>
+
+<!-- ================= CASH JOURNAL (read-only combined view) ================= -->
+<div class="screen" id="view-cashjournal">
+  <header>
+    <div class="hdr-left">
+      <button class="hdr-btn back-btn" aria-label="Back" data-back>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="title-block">
+        <div class="t1">Cash <span class="accent">Journal</span></div>
+        <div class="t2"><span class="by-pavel">by Pavel</span><span class="dot-sep">&middot;</span><button type="button" class="date-pill" id="dateLabel-journal" aria-label="Change date"></button></div>
+      </div>
+    </div>
+    <div class="hdr-actions">
+      <button class="hdr-btn" id="saveBtn-journal" aria-label="Save">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+      </button>
+      <button class="hdr-btn hdr-btn-wa" id="shareBtn-journal" aria-label="Share to WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.87.51 3.62 1.4 5.12L2 22l4.99-1.36C8.44 21.49 10.17 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2Zm0 18.2c-1.66 0-3.2-.48-4.5-1.31l-.32-.2-3.02.82.83-2.94-.21-.31A8.17 8.17 0 0 1 3.8 12c0-4.53 3.68-8.2 8.2-8.2s8.2 3.67 8.2 8.2-3.67 8.2-8.2 8.2Zm4.5-6.14c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.96-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.7-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.06 0 1.22.88 2.4 1.01 2.56.12.17 1.73 2.64 4.2 3.7.59.25 1.05.4 1.4.51.59.19 1.13.16 1.55.1.47-.07 1.46-.6 1.67-1.17.2-.58.2-1.08.14-1.18-.06-.1-.22-.16-.47-.28Z"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="divider"></div>
+  <div class="ex-rows" id="rows-journal"></div>
+</div>
+
+<!-- ================= WEEKLY REMINDERS ================= -->
+<div class="screen" id="view-reminders-all">
+  <header>
+    <div class="hdr-left">
+      <button class="hdr-btn back-btn" aria-label="Back" data-back>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="title-block">
+        <div class="t1">Weekly <span class="accent">Reminders</span></div>
+        <div class="t2"><span class="by-pavel">by Pavel</span></div>
+      </div>
+    </div>
+  </header>
+  <div class="divider"></div>
+  <div class="reminders-list" id="remindersList"></div>
+</div>
+
+<!-- ================= HISTORY ================= -->
+<div class="screen" id="view-history">
+  <header>
+    <div class="hdr-left">
+      <button class="hdr-btn back-btn" aria-label="Back" data-back>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="title-block">
+        <div class="t1">Count <span class="accent">History</span></div>
+        <div class="t2"><span class="by-pavel">by Pavel</span></div>
+      </div>
+    </div>
+  </header>
+  <div class="divider"></div>
+  <div class="history-tabs" id="historyTabs">
+    <button class="history-tab active" data-history-type="sales">Sales</button>
+    <button class="history-tab" data-history-type="kasse">Kasse</button>
+    <button class="history-tab" data-history-type="daily">Daily</button>
+    <button class="history-tab" data-history-type="exchange">Exchange</button>
+    <button class="history-tab" data-history-type="cashjournal">Journal</button>
+  </div>
+  <div class="history-list" id="historyList"></div>
+  <div class="empty-msg" id="emptyMsg-history">No saved history yet</div>
+</div>
+
+<!-- ================= HISTORY DETAIL ================= -->
+<div class="screen" id="view-history-detail">
+  <header>
+    <div class="hdr-left">
+      <button class="hdr-btn back-btn" aria-label="Back" data-back data-back-target="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="title-block">
+        <div class="t1" id="historyDetailTitle">Count <span class="accent">Detail</span></div>
+        <div class="t2"><span class="by-pavel">by Pavel</span><span class="dot-sep">&middot;</span><span id="historyDetailDate"></span></div>
+      </div>
+    </div>
+    <div class="hdr-actions">
+      <button class="hdr-btn" id="historyDetailDeleteBtn" aria-label="Delete this entry">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="divider"></div>
+  <div class="history-detail-rows" id="historyDetailRows"></div>
+  <div class="total-bar" id="historyDetailTotalBar">
+    <span class="label">Total</span>
+    <span class="value" id="historyDetailTotal">0.00€</span>
+  </div>
+</div>
+
+<div class="toast" id="toast">Saved</div>
+
+<div class="modal-overlay" id="datePickerOverlay">
+  <div class="modal-sheet">
+    <div class="modal-title">Change Date</div>
+    <div class="modal-selects">
+      <select class="modal-select" id="datePickerMonth"></select>
+      <select class="modal-select" id="datePickerDay"></select>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn" id="datePickerCancel">Cancel</button>
+      <button type="button" class="modal-btn modal-btn-apply" id="datePickerApply">Set Date</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+/* =====================================================================
+   NAVIGATION
+   ===================================================================== */
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(function (s) { s.classList.remove("active"); });
+  document.getElementById("view-" + id).classList.add("active");
+}
+document.querySelectorAll("[data-goto]").forEach(function (btn) {
+  btn.addEventListener("click", function () { showScreen(btn.getAttribute("data-goto")); });
+});
+document.querySelectorAll("[data-back]").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    showScreen(btn.getAttribute("data-back-target") || "home");
+  });
+});
+
+var toastEl = document.getElementById("toast");
+var toastTimer = null;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 1100);
+}
+
+/* Blur any focused input before navigating so the keyboard commits the
+   final keystroke immediately — everything is already auto-saved to
+   localStorage on every input, this just makes sure nothing is left
+   sitting uncommitted in the field itself. */
+document.querySelectorAll("[data-back]").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }, true);
+});
+
+/* =====================================================================
+   RESET EVERYTHING (home screen)
+   ===================================================================== */
+document.getElementById("resetAllBtn-home").addEventListener("click", function () {
+  if (!confirm("Reset Sales Count, Kasse Count, Daily Count, Exchange Money, and Cash Journal? This cannot be undone.")) return;
+  try {
+    var today = new Date();
+    var y = today.getFullYear();
+    var m = String(today.getMonth() + 1).padStart(2, "0");
+    var day = String(today.getDate()).padStart(2, "0");
+    var dateKey = y + "-" + m + "-" + day;
+    localStorage.removeItem("moneycounter_sales_v1");
+    localStorage.removeItem("moneycounter_kasse_v1");
+    localStorage.removeItem("moneycounter_sales_v1:" + dateKey);
+    localStorage.removeItem("moneycounter_kasse_v1:" + dateKey);
+    localStorage.removeItem("dailycount:" + dateKey);
+    localStorage.removeItem("dailycount_ea:" + dateKey);
+    localStorage.removeItem("exchangemoney:" + dateKey);
+  } catch (e) {}
+  location.reload();
+});
+
+/* =====================================================================
+   CHECKLIST NOTIFICATION — reminds once a day at a fixed time
+   ===================================================================== */
+(function () {
+  var REMINDER_HOUR = 11;
+  var REMINDER_MINUTE = 45;
+  var REMINDER_TITLE = "Counting Assistance";
+  var REMINDER_MSG = "Complete the Checklist";
+  var LAST_FIRED_KEY = "checklistReminder_lastFired";
+  var DISMISSED_KEY = "checklistReminder_dismissed";
+
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  var checklistBanner = document.getElementById("checklistBanner-home");
+  var dismissBtn = document.getElementById("checklistDismissBtn-home");
+
+  function showChecklistBanner() {
+    var dismissed = null;
+    try { dismissed = localStorage.getItem(DISMISSED_KEY); } catch (e) {}
+    if (dismissed !== todayKey()) checklistBanner.classList.add("show");
+  }
+
+  dismissBtn.addEventListener("click", function () {
+    checklistBanner.classList.remove("show");
+    try { localStorage.setItem(DISMISSED_KEY, todayKey()); } catch (e) {}
+  });
+
+  function fireReminder() {
+    try { localStorage.setItem(LAST_FIRED_KEY, todayKey()); } catch (e) {}
+    showChecklistBanner();
+    // Bonus: also try a real system notification, if the browser allows it
+    // on this page (requires https and permission — not guaranteed here).
+    if (window.Notification && Notification.permission === "granted") {
+      try {
+        var n = new Notification(REMINDER_TITLE, { body: REMINDER_MSG, tag: "checklist-reminder" });
+        n.onclick = function () { window.focus(); n.close(); };
+      } catch (e) {}
+    }
+  }
+
+  function checkReminder() {
+    var now = new Date();
+    var minutesNow = now.getHours() * 60 + now.getMinutes();
+    var minutesTarget = REMINDER_HOUR * 60 + REMINDER_MINUTE;
+    var lastFired = null;
+    try { lastFired = localStorage.getItem(LAST_FIRED_KEY); } catch (e) {}
+    if (minutesNow >= minutesTarget && lastFired !== todayKey()) {
+      fireReminder();
+    } else if (lastFired === todayKey()) {
+      showChecklistBanner();
+    }
+  }
+
+  var permBanner = document.getElementById("notifBanner-home");
+  var enableBtn = document.getElementById("notifEnableBtn-home");
+
+  function refreshPermBannerVisibility() {
+    var supported = "Notification" in window;
+    permBanner.classList.toggle("show", supported && Notification.permission === "default");
+  }
+
+  if ("Notification" in window) {
+    refreshPermBannerVisibility();
+    enableBtn.addEventListener("click", function () {
+      Notification.requestPermission().then(function (perm) {
+        refreshPermBannerVisibility();
+        if (perm === "granted") showToast("Notifications enabled");
+        else showToast("Notifications blocked — using in-app reminder instead");
+      });
+    });
+  } else {
+    permBanner.classList.remove("show");
+  }
+
+  checkReminder();
+  setInterval(checkReminder, 30000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) checkReminder(); });
+})();
+
+/* =====================================================================
+   HISTORY — shared read/write helpers.
+   Each save overwrites that day's entry, so history always holds the
+   LAST saved snapshot for each date, per counter type.
+   ===================================================================== */
+function dateKeyFromDate(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function todayDateKey() { return dateKeyFromDate(new Date()); }
+function dateFromKey(key) {
+  var parts = key.split("-");
+  return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+}
+function historyStorageKey(type) { return "history_" + type + "_v1"; }
+function loadHistoryMap(type) {
+  try {
+    var raw = localStorage.getItem(historyStorageKey(type));
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return {};
+}
+function saveHistoryEntry(type, dateKey, entry) {
+  var map = loadHistoryMap(type);
+  map[dateKey] = entry;
+  try { localStorage.setItem(historyStorageKey(type), JSON.stringify(map)); } catch (e) {}
+}
+function deleteHistoryEntry(type, dateKey) {
+  var map = loadHistoryMap(type);
+  delete map[dateKey];
+  try { localStorage.setItem(historyStorageKey(type), JSON.stringify(map)); } catch (e) {}
+}
+
+/* =====================================================================
+   DATE PICKER — shared bottom sheet (month + day only) used by all
+   three counters to let the person file a count under a different date.
+   ===================================================================== */
+(function initDatePicker() {
+  var overlay = document.getElementById("datePickerOverlay");
+  var monthSel = document.getElementById("datePickerMonth");
+  var daySel = document.getElementById("datePickerDay");
+  var applyBtn = document.getElementById("datePickerApply");
+  var cancelBtn = document.getElementById("datePickerCancel");
+  var pendingCallback = null;
+  var pendingYear = null;
+
+  var MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  function daysInMonth(year, monthIdx0) { return new Date(year, monthIdx0 + 1, 0).getDate(); }
+
+  function populateDays(year, monthIdx0, selectedDay) {
+    daySel.innerHTML = "";
+    var total = daysInMonth(year, monthIdx0);
+    for (var d = 1; d <= total; d++) {
+      var opt = document.createElement("option");
+      opt.value = d;
+      opt.textContent = d;
+      if (d === selectedDay) opt.selected = true;
+      daySel.appendChild(opt);
+    }
+  }
+
+  monthSel.addEventListener("change", function () {
+    var curDay = parseInt(daySel.value, 10) || 1;
+    populateDays(pendingYear, parseInt(monthSel.value, 10), curDay);
+  });
+
+  function closeModal() {
+    overlay.classList.remove("show");
+    pendingCallback = null;
+  }
+
+  applyBtn.addEventListener("click", function () {
+    var monthIdx = parseInt(monthSel.value, 10);
+    var day = parseInt(daySel.value, 10);
+    var newDate = new Date(pendingYear, monthIdx, day);
+    var cb = pendingCallback;
+    closeModal();
+    if (cb) cb(newDate);
+  });
+  cancelBtn.addEventListener("click", closeModal);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) closeModal(); });
+
+  // currentDate: the Date currently active on that screen (keeps year, just
+  // lets the person pick a new month + day). onApply(newDate) fires on Set Date.
+  window.openDatePicker = function (currentDate, onApply) {
+    pendingCallback = onApply;
+    pendingYear = currentDate.getFullYear();
+    monthSel.innerHTML = "";
+    MONTH_NAMES.forEach(function (name, idx) {
+      var opt = document.createElement("option");
+      opt.value = idx;
+      opt.textContent = name;
+      if (idx === currentDate.getMonth()) opt.selected = true;
+      monthSel.appendChild(opt);
+    });
+    populateDays(pendingYear, currentDate.getMonth(), currentDate.getDate());
+    overlay.classList.add("show");
+  };
+})();
+
+/* =====================================================================
+   MONEY COUNTER (shared factory — used for Sales Count and Kasse Count)
+   ===================================================================== */
+function initMoneyCounter(ns, baseKey) {
+  var DENOMS = [
+    { value: 0.01, label: "0.01", color: "#b56b3f", type: "coin" },
+    { value: 0.02, label: "0.02", color: "#b56b3f", type: "coin" },
+    { value: 0.05, label: "0.05", color: "#b56b3f", type: "coin" },
+    { value: 0.10, label: "0.10", color: "#d4af37", type: "coin" },
+    { value: 0.20, label: "0.20", color: "#d4af37", type: "coin" },
+    { value: 0.50, label: "0.50", color: "#d4af37", type: "coin" },
+    { value: 1,    label: "€1",   color: "#d9d9d9", type: "coin" },
+    { value: 2,    label: "€2",   color: "#d9d9d9", type: "coin" },
+    { value: 5,    label: "€5",   color: "#aab0bd", type: "note" },
+    { value: 10,   label: "€10",  color: "#ef4136", type: "note" },
+    { value: 20,   label: "€20",  color: "#1f6fd6", type: "note" },
+    { value: 50,   label: "€50",  color: "#ff8c2b", type: "note" },
+    { value: 100,  label: "€100", color: "#3aa564", type: "note" },
+    { value: 200,  label: "€200", color: "#f4c430", type: "note" }
+  ];
+
+  function keyFor(dateKey) { return baseKey + ":" + dateKey; }
+
+  // One-time migration: before date support existed, each counter kept a
+  // single running total under the fixed baseKey. If today's date-scoped
+  // key has nothing yet, pull that old data in so nothing is lost.
+  function loadCountsForDate(dateKey) {
+    try {
+      var saved = localStorage.getItem(keyFor(dateKey));
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === DENOMS.length) return parsed;
+      }
+    } catch (e) {}
+    if (dateKey === todayDateKey()) {
+      try {
+        var legacy = localStorage.getItem(baseKey);
+        if (legacy) {
+          var parsedLegacy = JSON.parse(legacy);
+          if (Array.isArray(parsedLegacy) && parsedLegacy.length === DENOMS.length) return parsedLegacy;
+        }
+      } catch (e) {}
+    }
+    return DENOMS.map(function () { return 0; });
+  }
+
+  var activeDate = new Date();
+  var activeDateKey = dateKeyFromDate(activeDate);
+  var storageKey = keyFor(activeDateKey);
+  var counts = loadCountsForDate(activeDateKey);
+
+  var rowsEl = document.getElementById("rows-" + ns);
+  var totalEl = document.getElementById("totalVal-" + ns);
+  var emptyMsgEl = document.getElementById("emptyMsg-" + ns);
+  var saveIconEl = document.getElementById("saveIcon-" + ns);
+  var saveBtnEl = document.getElementById("saveBtn-" + ns);
+  var dateLabelEl = document.getElementById("dateLabel-" + ns);
+  var savedView = false;
+
+  function fmt(n) { return n.toFixed(2) + "\u20AC"; }
+
+  function persist() {
+    try { localStorage.setItem(storageKey, JSON.stringify(counts)); } catch (e) {}
+  }
+
+  function updateRow(i) {
+    var c = Math.max(0, counts[i] || 0);
+    counts[i] = c;
+    var sumEl = document.getElementById("sum-" + ns + "-" + i);
+    var inputEl = document.getElementById("count-" + ns + "-" + i);
+    var lineTotal = DENOMS[i].value * c;
+    sumEl.textContent = fmt(lineTotal);
+    sumEl.classList.toggle("active", c > 0);
+    if (document.activeElement !== inputEl) inputEl.value = c > 0 ? c : "";
+  }
+
+  function updateTotal() {
+    var total = 0;
+    for (var i = 0; i < DENOMS.length; i++) total += DENOMS[i].value * (counts[i] || 0);
+    totalEl.textContent = fmt(total);
+  }
+
+  function setCount(i, val) {
+    var n = parseInt(val, 10);
+    counts[i] = isNaN(n) ? 0 : Math.max(0, n);
+    updateRow(i);
+    updateTotal();
+    persist();
+    if (savedView) applyFilter();
+  }
+
+  DENOMS.forEach(function (d, i) {
+    var row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML =
+      '<div class="denom">' +
+        '<span class="dot' + (d.type === "note" ? " note" : "") + '" style="background:' + d.color + '"></span>' +
+        '<span class="denom-label">' + d.label + '</span>' +
+      '</div>' +
+      '<div class="mid">' +
+        '<input class="count" type="text" inputmode="numeric" placeholder="0" id="count-' + ns + '-' + i + '" value="' + (counts[i] > 0 ? counts[i] : "") + '">' +
+      '</div>' +
+      '<div class="sum" id="sum-' + ns + '-' + i + '">' + fmt(d.value * counts[i]) + '</div>';
+    rowsEl.appendChild(row);
+  });
+
+  rowsEl.addEventListener("input", function (e) {
+    if (!e.target.classList.contains("count")) return;
+    var raw = e.target.value.replace(/[^\d]/g, "");
+    e.target.value = raw;
+    var i = parseInt(e.target.id.split("-")[2], 10);
+    setCount(i, raw);
+  });
+
+  rowsEl.addEventListener("focusout", function (e) {
+    if (!e.target.classList.contains("count")) return;
+    var i = parseInt(e.target.id.split("-")[2], 10);
+    updateRow(i);
+  }, true);
+
+  var SAVE_ICON = '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>';
+  var EDIT_ICON = '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>';
+
+  function applyFilter() {
+    var anyVisible = false;
+    for (var i = 0; i < DENOMS.length; i++) {
+      var row = rowsEl.children[i];
+      var show = !savedView || counts[i] > 0;
+      row.style.display = show ? "flex" : "none";
+      if (show) anyVisible = true;
+    }
+    emptyMsgEl.style.display = savedView && !anyVisible ? "flex" : "none";
+    rowsEl.style.display = savedView && !anyVisible ? "none" : "flex";
+  }
+
+  function snapshotHistory() {
+    var total = 0;
+    var breakdown = [];
+    for (var i = 0; i < DENOMS.length; i++) {
+      var c = counts[i] || 0;
+      total += DENOMS[i].value * c;
+      if (c > 0) breakdown.push({ label: DENOMS[i].label, count: c, lineTotal: DENOMS[i].value * c });
+    }
+    saveHistoryEntry(ns, activeDateKey, { total: total, breakdown: breakdown, savedAt: new Date().toISOString() });
+  }
+
+  function enterSavedView() {
+    savedView = true;
+    persist();
+    applyFilter();
+    saveIconEl.innerHTML = EDIT_ICON;
+    saveBtnEl.setAttribute("aria-label", "Edit");
+    snapshotHistory();
+    showToast("Saved");
+  }
+
+  function enterEditView() {
+    savedView = false;
+    applyFilter();
+    saveIconEl.innerHTML = SAVE_ICON;
+    saveBtnEl.setAttribute("aria-label", "Save");
+    showToast("Editing");
+  }
+
+  saveBtnEl.addEventListener("click", function () {
+    if (savedView) enterEditView(); else enterSavedView();
+  });
+
+  document.getElementById("resetBtn-" + ns).addEventListener("click", function () {
+    if (!confirm("Reset all counts to zero?")) return;
+    counts = DENOMS.map(function () { return 0; });
+    for (var i = 0; i < DENOMS.length; i++) updateRow(i);
+    updateTotal();
+    persist();
+    if (savedView) applyFilter();
+    showToast("Reset");
+  });
+
+  function switchToDate(newDate) {
+    activeDate = newDate;
+    activeDateKey = dateKeyFromDate(newDate);
+    storageKey = keyFor(activeDateKey);
+    counts = loadCountsForDate(activeDateKey);
+    savedView = false;
+    for (var i = 0; i < DENOMS.length; i++) updateRow(i);
+    updateTotal();
+    applyFilter();
+    saveIconEl.innerHTML = SAVE_ICON;
+    saveBtnEl.setAttribute("aria-label", "Save");
+    dateLabelEl.textContent = formatDate(activeDate);
+  }
+
+  dateLabelEl.addEventListener("click", function () {
+    openDatePicker(activeDate, switchToDate);
+  });
+
+  updateTotal();
+  dateLabelEl.textContent = formatDate(activeDate);
+}
+
+/* =====================================================================
+   SHARED: date formatting + day notes (used by Home and Daily Count)
+   ===================================================================== */
+function formatDate(d) {
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
+var DAY_MESSAGES = {
+  0: "\u2022 Keep all restmull outside\n\u2022 Cash Station deep clean\n\u2022 Floor deep clean",
+  1: "\u2022 Keep Paper mulls outside\n\u2022 Grill station deep clean",
+  2: "\u2022 Bread Station deep clean",
+  3: "\u2022 All mull out\n\u2022 Behind the Grill clean",
+  4: "\u2022 Pommes station deep clean\n\u2022 Fries Station Deep Clean\n\u2022 Floor Deep clean with Salt",
+  5: "\u2022 Grill Station deep clean\n\u2022 All Drainage Holes Clean",
+  6: "\u2022 Bread Station deep clean\n\u2022 Behind the grill clean"
+};
+
+(function initRemindersAllScreen() {
+  var listEl = document.getElementById("remindersList");
+  if (!listEl) return;
+  var DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  var todayIdx = new Date().getDay();
+
+  DAY_NAMES.forEach(function (name, idx) {
+    var msg = DAY_MESSAGES[idx] || "";
+    var card = document.createElement("div");
+    card.className = "reminder-card" + (idx === todayIdx ? " today" : "");
+
+    var head = document.createElement("button");
+    head.type = "button";
+    head.className = "reminder-card-head";
+    head.innerHTML =
+      '<div class="reminder-day-name">' + name + (idx === todayIdx ? '<span class="today-tag">Today</span>' : '') + '</div>' +
+      '<div class="reminder-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>';
+    head.addEventListener("click", function () { card.classList.toggle("open"); });
+    card.appendChild(head);
+
+    var body = document.createElement("div");
+    body.className = "reminder-card-body";
+    body.textContent = msg || "No reminder set for this day";
+    if (!msg) body.classList.add("reminder-card-empty");
+    card.appendChild(body);
+
+    if (idx === todayIdx) card.classList.add("open");
+    listEl.appendChild(card);
+  });
+})();
+
+var HOME_EYE_ICON = '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
+var HOME_EYE_OFF_ICON = '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-6.5 0-10-7-10-7a18.6 18.6 0 0 1 4.22-5.06"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 5c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/>';
+var HOME_NOTE_VISIBLE_KEY = "home:noteVisible";
+
+(function initHomeInfo() {
+  var today = new Date();
+  var dateLabelEl = document.getElementById("dateLabel-home");
+  if (dateLabelEl) dateLabelEl.textContent = formatDate(today);
+
+  var noteBarEl = document.getElementById("noteBar-home");
+  var noteTextEl = document.getElementById("noteText-home");
+  var noteToggleBtn = document.getElementById("noteToggleBtn-home");
+  var msg = DAY_MESSAGES[today.getDay()] || "";
+  var noteVisible = localStorage.getItem(HOME_NOTE_VISIBLE_KEY) !== "hidden";
+
+  function applyNoteVisibility() {
+    noteBarEl.classList.toggle("hidden", !noteVisible);
+    noteToggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (noteVisible ? HOME_EYE_ICON : HOME_EYE_OFF_ICON) + '</svg>';
+    noteToggleBtn.setAttribute("aria-label", noteVisible ? "Hide note" : "Show note");
+  }
+
+  if (noteTextEl) noteTextEl.textContent = msg;
+  if (!msg) {
+    if (noteBarEl) noteBarEl.style.display = "none";
+  } else {
+    if (noteBarEl) noteBarEl.style.display = "flex";
+    if (noteToggleBtn) {
+      applyNoteVisibility();
+      noteToggleBtn.addEventListener("click", function () {
+        noteVisible = !noteVisible;
+        localStorage.setItem(HOME_NOTE_VISIBLE_KEY, noteVisible ? "visible" : "hidden");
+        applyNoteVisibility();
+      });
+    }
+  }
+})();
+
+initMoneyCounter("sales", "moneycounter_sales_v1");
+initMoneyCounter("kasse", "moneycounter_kasse_v1");
+
+/* =====================================================================
+   DAILY COUNT
+   ===================================================================== */
+(function initDailyCount() {
+  var ITEMS = ["Bacon Flakes", "Bacon Schieb", "Bread", "Patty", "Veggie Patty", "Pommes"];
+  var EA_ITEMS = ["Patty", "Veggie Patty", "Bread", "Pommes"];
+  var FRACTION_ITEMS = ["Bacon Flakes", "Bacon Schieb"];
+
+  function todayKey(d) {
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+  function normalize(arr) {
+    var out = arr.slice();
+    while (out.length > 1 && out[out.length - 1] === "" && out[out.length - 2] === "") out.pop();
+    if (out.length === 0 || out[out.length - 1] !== "") out.push("");
+    return out;
+  }
+  function parseValue(v) {
+    if (typeof v !== "string" || v === "") return 0;
+    var slashIdx = v.indexOf("/");
+    if (slashIdx > -1) {
+      var num = parseFloat(v.slice(0, slashIdx));
+      var den = parseFloat(v.slice(slashIdx + 1));
+      if (!num || !den) return 0;
+      return num / den;
+    }
+    var n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  }
+  function sumOf(arr) {
+    return arr.reduce(function (s, v) { return s + parseValue(v); }, 0);
+  }
+
+  function loadDataForDate(dk) {
+    var d = {};
+    try {
+      var saved = localStorage.getItem("dailycount:" + dk);
+      if (saved) d = JSON.parse(saved);
+    } catch (e) {}
+    ITEMS.forEach(function (item) { d[item] = normalize(d[item] || [""]); });
+    return d;
+  }
+  function loadEaForDate(dk) {
+    var e = {};
+    try {
+      var saved = localStorage.getItem("dailycount_ea:" + dk);
+      if (saved) e = JSON.parse(saved);
+    } catch (err) {}
+    EA_ITEMS.forEach(function (item) { if (typeof e[item] !== "string") e[item] = ""; });
+    return e;
+  }
+
+  var activeDate = new Date();
+  var dateKey = todayKey(activeDate);
+  var storageKey = "dailycount:" + dateKey;
+  var data = loadDataForDate(dateKey);
+
+  var eaStorageKey = "dailycount_ea:" + dateKey;
+  var eaData = loadEaForDate(dateKey);
+
+  function persistEa() {
+    try { localStorage.setItem(eaStorageKey, JSON.stringify(eaData)); } catch (e) {}
+  }
+
+  var dateLabelEl = document.getElementById("dateLabel-daily");
+  dateLabelEl.textContent = formatDate(activeDate);
+
+  var rowsEl = document.getElementById("rows-daily");
+  var toastTimer2 = null;
+  var pendingFocus = null;
+  var savedView = false;
+
+  function showToastDaily(msg) {
+    showToast(msg);
+  }
+
+  function persist() {
+    try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) {}
+  }
+
+  function fmtNum(n) { return n % 1 === 0 ? String(n) : n.toFixed(2); }
+
+  function render() {
+    rowsEl.innerHTML = "";
+    ITEMS.forEach(function (item, itemIdx) {
+      var arr = data[item];
+      var total = sumOf(arr);
+      var isFractionItem = FRACTION_ITEMS.indexOf(item) !== -1;
+
+      var row = document.createElement("div");
+      row.className = "d-row";
+
+      var label = document.createElement("div");
+      label.className = "item-label";
+      label.textContent = item;
+      row.appendChild(label);
+
+      var boxesScroll = document.createElement("div");
+      boxesScroll.className = "boxes-scroll";
+      arr.forEach(function (val, boxIdx) {
+        var input = document.createElement("input");
+        input.type = "text";
+        input.inputMode = "decimal";
+        input.className = "box";
+        input.placeholder = "\u2014";
+        input.maxLength = isFractionItem ? 4 : 2;
+        input.value = val;
+        input.id = "box-daily-" + itemIdx + "-" + boxIdx;
+        input.addEventListener("input", function (e) {
+          onBoxInput(item, itemIdx, boxIdx, e.target.value);
+        });
+        boxesScroll.appendChild(input);
+      });
+      row.appendChild(boxesScroll);
+
+      if (EA_ITEMS.indexOf(item) !== -1) {
+        var eaWrap = document.createElement("div");
+        eaWrap.className = "ea-wrap";
+
+        var eaTag = document.createElement("span");
+        eaTag.className = "ea-tag";
+        eaTag.textContent = "EA";
+        eaWrap.appendChild(eaTag);
+
+        var eaInput = document.createElement("input");
+        eaInput.type = "text";
+        eaInput.inputMode = "decimal";
+        eaInput.className = "ea-box";
+        eaInput.placeholder = "\u2014";
+        eaInput.maxLength = 2;
+        eaInput.value = eaData[item] || "";
+        eaInput.id = "ea-daily-" + itemIdx;
+        eaInput.addEventListener("input", function (e) {
+          var raw = e.target.value;
+          if (raw !== "" && !/^\d*\.?\d*$/.test(raw)) { e.target.value = eaData[item] || ""; return; }
+          eaData[item] = raw;
+          persistEa();
+        });
+        eaWrap.appendChild(eaInput);
+        row.appendChild(eaWrap);
+      } else {
+        var eaSpacer = document.createElement("div");
+        eaSpacer.className = "ea-spacer";
+        row.appendChild(eaSpacer);
+      }
+
+      var chip = document.createElement("div");
+      chip.className = "total-chip" + (total > 0 ? " active" : "");
+      chip.textContent = fmtNum(total);
+      row.appendChild(chip);
+
+      var rowResetBtn = document.createElement("button");
+      rowResetBtn.className = "row-reset";
+      rowResetBtn.setAttribute("aria-label", "Reset " + item);
+      rowResetBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>';
+      rowResetBtn.addEventListener("click", function () { resetItem(item); });
+      row.appendChild(rowResetBtn);
+
+      rowsEl.appendChild(row);
+    });
+
+    var emptyEl = document.getElementById("emptyMsg-daily");
+    if (savedView) {
+      var anyVisible = false;
+      ITEMS.forEach(function (item, idx) {
+        var row = rowsEl.children[idx];
+        var show = sumOf(data[item]) > 0;
+        row.style.display = show ? "flex" : "none";
+        if (show) anyVisible = true;
+      });
+      if (!anyVisible) {
+        rowsEl.style.display = "none";
+        if (!emptyEl) {
+          emptyEl = document.createElement("div");
+          emptyEl.id = "emptyMsg-daily";
+          emptyEl.className = "empty-msg";
+          emptyEl.style.display = "flex";
+          emptyEl.textContent = "Nothing entered yet";
+          rowsEl.parentNode.insertBefore(emptyEl, rowsEl.nextSibling);
+        }
+      } else if (emptyEl) {
+        emptyEl.remove();
+        rowsEl.style.display = "flex";
+      }
+    } else {
+      rowsEl.style.display = "flex";
+      if (emptyEl) emptyEl.remove();
+    }
+
+    if (pendingFocus) {
+      var el = document.getElementById("box-daily-" + pendingFocus.itemIdx + "-" + pendingFocus.boxIdx);
+      if (el) {
+        el.focus();
+        var v = el.value;
+        el.setSelectionRange(v.length, v.length);
+      }
+      pendingFocus = null;
+    }
+  }
+
+  function onBoxInput(item, itemIdx, boxIdx, raw) {
+    // allow a plain number/decimal (e.g. "3", "1.5") OR a simple fraction (e.g. "3/4"),
+    // including in-progress states like "1." or "3/" while the person is still typing
+    if (raw !== "" && !/^\d*\.?\d*$/.test(raw) && !/^\d*\/?\d*$/.test(raw)) {
+      render();
+      return;
+    }
+    var arr = data[item].slice();
+    arr[boxIdx] = raw;
+    var normalized = normalize(arr);
+    data[item] = normalized;
+
+    if (boxIdx < normalized.length) {
+      pendingFocus = { itemIdx: itemIdx, boxIdx: boxIdx };
+    }
+
+    persist();
+    render();
+  }
+
+  function resetItem(item) {
+    data[item] = [""];
+    if (EA_ITEMS.indexOf(item) !== -1) { eaData[item] = ""; persistEa(); }
+    pendingFocus = null;
+    persist();
+    render();
+    showToastDaily(item + " cleared");
+  }
+
+  function resetAll() {
+    ITEMS.forEach(function (item) { data[item] = [""]; });
+    EA_ITEMS.forEach(function (item) { eaData[item] = ""; });
+    persistEa();
+    pendingFocus = null;
+    persist();
+    render();
+    showToastDaily("Reset");
+  }
+
+  var SAVE_ICON = '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>';
+  var EDIT_ICON = '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>';
+  var saveIconWrap = document.getElementById("saveBtn-daily");
+
+  function snapshotHistory() {
+    var breakdown = [];
+    ITEMS.forEach(function (item) {
+      var total = sumOf(data[item]);
+      if (total > 0) {
+        var entry = { label: item, total: total };
+        if (EA_ITEMS.indexOf(item) !== -1 && eaData[item]) entry.ea = eaData[item];
+        breakdown.push(entry);
+      }
+    });
+    saveHistoryEntry("daily", dateKey, { breakdown: breakdown, savedAt: new Date().toISOString() });
+  }
+
+  function enterSavedView() {
+    savedView = true;
+    persist();
+    render();
+    saveIconWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + EDIT_ICON + '</svg>';
+    saveIconWrap.setAttribute("aria-label", "Edit");
+    snapshotHistory();
+    showToastDaily("Saved");
+  }
+
+  function enterEditView() {
+    savedView = false;
+    render();
+    saveIconWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + SAVE_ICON + '</svg>';
+    saveIconWrap.setAttribute("aria-label", "Save");
+    showToastDaily("Editing");
+  }
+
+  saveIconWrap.addEventListener("click", function () {
+    if (savedView) enterEditView(); else enterSavedView();
+  });
+
+  document.getElementById("resetAllBtn-daily").addEventListener("click", function () {
+    if (!confirm("Reset all items to zero?")) return;
+    resetAll();
+  });
+
+  function switchToDate(newDate) {
+    activeDate = newDate;
+    dateKey = todayKey(newDate);
+    storageKey = "dailycount:" + dateKey;
+    eaStorageKey = "dailycount_ea:" + dateKey;
+    data = loadDataForDate(dateKey);
+    eaData = loadEaForDate(dateKey);
+    pendingFocus = null;
+    savedView = false;
+    saveIconWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + SAVE_ICON + '</svg>';
+    saveIconWrap.setAttribute("aria-label", "Save");
+    dateLabelEl.textContent = formatDate(activeDate);
+    render();
+  }
+
+  dateLabelEl.addEventListener("click", function () {
+    openDatePicker(activeDate, switchToDate);
+  });
+
+  render();
+})();
+
+/* =====================================================================
+   EXCHANGE MONEY — safe + base exchange money count (bills, coin singles
+   and coin rolls), plus a computed cash balance and a Cash Balance per Day
+   ===================================================================== */
+/* =====================================================================
+   EXCHANGE MONEY — safe + base exchange money count (bills, coin singles
+   and coin rolls). Saving here feeds straight into the Cash Journal for
+   the same date (Cash Journal reads this data live, no push needed).
+   ===================================================================== */
+(function initExchangeMoney() {
+  var ROLL_COUNT = { 2: 25, 1: 25, 0.5: 40, 0.2: 40, 0.1: 40, 0.05: 50, 0.02: 50, 0.01: 50 };
+  function rollValue(v) { return +(v * ROLL_COUNT[v]).toFixed(2); }
+
+  var FIELDS = [
+    { key: "bill100", label: "100er Bill", sub: "Bills in safe + register combined", value: 100, kind: "bill" },
+    { key: "bill50", label: "50er Bill", sub: "Bills in safe + register combined", value: 50, kind: "bill" },
+    { key: "bill20", label: "20er Bill", sub: "Bills in safe + register combined", value: 20, kind: "bill" },
+    { key: "bill10", label: "10er Bill", sub: "Bills in safe + register combined", value: 10, kind: "bill" },
+    { key: "bill5", label: "5er Bill", sub: "Bills in safe + register combined", value: 5, kind: "bill" },
+    { key: "coin2s", label: "2\u20AC Singles", sub: "Coins in safe + register combined", value: 2, section: "Coins", kind: "single" },
+    { key: "coin2r", label: "2\u20AC Rolls", sub: ROLL_COUNT[2] + " coins/roll \u2014 " + rollValue(2).toFixed(2) + "\u20AC each", value: rollValue(2), kind: "roll" },
+    { key: "coin1s", label: "1\u20AC Singles", sub: "Coins in safe + register combined", value: 1, kind: "single" },
+    { key: "coin1r", label: "1\u20AC Rolls", sub: ROLL_COUNT[1] + " coins/roll \u2014 " + rollValue(1).toFixed(2) + "\u20AC each", value: rollValue(1), kind: "roll" },
+    { key: "coin050s", label: "0,50er Singles", sub: "Coins in safe + register combined", value: 0.5, kind: "single" },
+    { key: "coin050r", label: "0,50er Rolls", sub: ROLL_COUNT[0.5] + " coins/roll \u2014 " + rollValue(0.5).toFixed(2) + "\u20AC each", value: rollValue(0.5), kind: "roll" },
+    { key: "coin020s", label: "0,20er Singles", sub: "Coins in safe + register combined", value: 0.2, kind: "single" },
+    { key: "coin020r", label: "0,20er Rolls", sub: ROLL_COUNT[0.2] + " coins/roll \u2014 " + rollValue(0.2).toFixed(2) + "\u20AC each", value: rollValue(0.2), kind: "roll" },
+    { key: "coin010s", label: "0,10er Singles", sub: "Coins in safe + register combined", value: 0.1, kind: "single" },
+    { key: "coin010r", label: "0,10er Rolls", sub: ROLL_COUNT[0.1] + " coins/roll \u2014 " + rollValue(0.1).toFixed(2) + "\u20AC each", value: rollValue(0.1), kind: "roll" },
+    { key: "coin005s", label: "0,05er Singles", sub: "Coins in safe + register combined", value: 0.05, kind: "single" },
+    { key: "coin005r", label: "0,05er Rolls", sub: ROLL_COUNT[0.05] + " coins/roll \u2014 " + rollValue(0.05).toFixed(2) + "\u20AC each", value: rollValue(0.05), kind: "roll" },
+    { key: "coin002r", label: "0,02er Rolls", sub: ROLL_COUNT[0.02] + " coins/roll \u2014 " + rollValue(0.02).toFixed(2) + "\u20AC each", value: rollValue(0.02), kind: "roll" },
+    { key: "coin001r", label: "0,01er Rolls", sub: ROLL_COUNT[0.01] + " coins/roll \u2014 " + rollValue(0.01).toFixed(2) + "\u20AC each", value: rollValue(0.01), kind: "roll" }
+  ];
+  var BILL_KEYS = ["bill100", "bill50", "bill20", "bill10", "bill5"];
+
+  function keyFor(dk) { return "exchangemoney:" + dk; }
+
+  function startOfWeek(date) {
+    var d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    var day = d.getDay();
+    var diff = (day === 0 ? -6 : 1) - day;
+    d.setDate(d.getDate() + diff);
+    return d;
+  }
+
+  function loadForDate(dk) {
+    var d = { counts: {} };
+    try {
+      var saved = localStorage.getItem(keyFor(dk));
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        d.counts = parsed.counts || {};
+      }
+    } catch (e) {}
+    return d;
+  }
+
+  function saveForDate(dk, d) {
+    try { localStorage.setItem(keyFor(dk), JSON.stringify(d)); } catch (e) {}
+  }
+
+  var activeDate = new Date();
+  var dateKey = dateKeyFromDate(activeDate);
+  var data = loadForDate(dateKey);
+
+  var rowsEl = document.getElementById("rows-exchange");
+  var dateLabelEl = document.getElementById("dateLabel-exchange");
+  dateLabelEl.textContent = formatDate(activeDate);
+
+  function persist() {
+    try { localStorage.setItem(keyFor(dateKey), JSON.stringify(data)); } catch (e) {}
+  }
+
+  function dayIndexInWeek(dk) {
+    var monday = startOfWeek(activeDate);
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      if (dateKeyFromDate(d) === dk) return i;
+    }
+    return null;
+  }
+
+  function propagateForwardInWeek(fieldKey, value) {
+    var idx = dayIndexInWeek(dateKey);
+    if (idx === null) return;
+    var monday = startOfWeek(activeDate);
+    for (var j = idx + 1; j < 7; j++) {
+      var d = new Date(monday);
+      d.setDate(monday.getDate() + j);
+      var dk = dateKeyFromDate(d);
+      var otherData = loadForDate(dk);
+      otherData.counts[fieldKey] = value;
+      try { localStorage.setItem(keyFor(dk), JSON.stringify(otherData)); } catch (e) {}
+    }
+  }
+
+  function countOf(key) {
+    var v = parseFloat(data.counts[key]);
+    return isNaN(v) ? 0 : v;
+  }
+
+  function computeTotal() {
+    var t = 0;
+    FIELDS.forEach(function (f) { t += f.value * countOf(f.key); });
+    return t;
+  }
+
+  function updateTotal() {
+    var el = document.getElementById("totalVal-exchange");
+    if (el) el.textContent = computeTotal().toFixed(2) + "\u20AC";
+  }
+
+  function render() {
+    rowsEl.innerHTML = "";
+
+    var billsTitle = document.createElement("div");
+    billsTitle.className = "ex-section-title";
+    billsTitle.textContent = "Bills";
+    rowsEl.appendChild(billsTitle);
+
+    FIELDS.forEach(function (f, idx) {
+      if (BILL_KEYS.indexOf(f.key) === -1 && idx === BILL_KEYS.length) {
+        var coinsTitle = document.createElement("div");
+        coinsTitle.className = "ex-section-title";
+        coinsTitle.textContent = "Coins";
+        rowsEl.appendChild(coinsTitle);
+      }
+
+      var row = document.createElement("div");
+      row.className = "ex-row" + (f.kind === "roll" ? " ex-row--roll" : "");
+
+      var labelWrap = document.createElement("div");
+      var label = document.createElement("div");
+      label.className = "ex-row-label";
+      label.textContent = f.label;
+      labelWrap.appendChild(label);
+      var sub = document.createElement("div");
+      sub.className = "ex-row-sub";
+      sub.textContent = f.sub;
+      labelWrap.appendChild(sub);
+      row.appendChild(labelWrap);
+
+      var input = document.createElement("input");
+      input.type = "text";
+      input.inputMode = "numeric";
+      input.className = "ex-input";
+      input.placeholder = "0";
+      input.value = data.counts[f.key] || "";
+      input.addEventListener("input", function (e) {
+        var raw = e.target.value;
+        if (raw !== "" && !/^\d*$/.test(raw)) { e.target.value = data.counts[f.key] || ""; return; }
+        data.counts[f.key] = raw;
+        persist();
+        propagateForwardInWeek(f.key, raw);
+        updateTotal();
+      });
+      row.appendChild(input);
+
+      rowsEl.appendChild(row);
+    });
+
+    var cashTotalRow = document.createElement("div");
+    cashTotalRow.className = "ex-cash-total-row";
+    var cashTotalLabel = document.createElement("span");
+    cashTotalLabel.className = "label";
+    cashTotalLabel.textContent = "Total";
+    cashTotalRow.appendChild(cashTotalLabel);
+    var cashTotalValue = document.createElement("span");
+    cashTotalValue.className = "value";
+    cashTotalValue.id = "totalVal-exchange";
+    cashTotalValue.textContent = computeTotal().toFixed(2) + "\u20AC";
+    cashTotalRow.appendChild(cashTotalValue);
+    rowsEl.appendChild(cashTotalRow);
+
+    updateTotal();
+  }
+
+  function snapshotHistory() {
+    var breakdown = [];
+    FIELDS.forEach(function (f) {
+      var c = countOf(f.key);
+      if (c > 0) breakdown.push({ label: f.label, count: c, lineTotal: f.value * c });
+    });
+    saveHistoryEntry("exchange", dateKey, {
+      breakdown: breakdown,
+      total: computeTotal(),
+      savedAt: new Date().toISOString()
+    });
+  }
+
+  document.getElementById("saveBtn-exchange").addEventListener("click", function () {
+    persist();
+    snapshotHistory();
+    render();
+    showToast("Saved");
+  });
+
+  document.getElementById("resetBtn-exchange").addEventListener("click", function () {
+    if (!confirm("Reset Exchange Money for this date? This cannot be undone.")) return;
+    data = { counts: {} };
+    persist();
+    render();
+    showToast("Reset");
+  });
+
+  document.getElementById("shareBtn-exchange").addEventListener("click", function () {
+    captureAndShare("exchangemoney", "Exchange Money");
+  });
+
+  // ---- Copy to another date -----------------------------------------
+  document.getElementById("copyBtn-exchange").addEventListener("click", function () {
+    openDatePicker(activeDate, function (targetDate) {
+      var targetKey = dateKeyFromDate(targetDate);
+      if (targetKey === dateKey) { showToast("Pick a different date to copy to"); return; }
+      var hasAny = Object.keys(data.counts).some(function (k) { return parseFloat(data.counts[k]) > 0; });
+      if (!hasAny) { showToast("Nothing to copy yet"); return; }
+      if (!confirm("Copy all values from " + formatDate(activeDate) + " into " + formatDate(targetDate) + "? This overwrites that date's Exchange Money entries.")) return;
+      var targetData = loadForDate(targetKey);
+      targetData.counts = JSON.parse(JSON.stringify(data.counts));
+      saveForDate(targetKey, targetData);
+      showToast("Copied to " + formatDate(targetDate));
+    });
+  });
+
+  dateLabelEl.addEventListener("click", function () {
+    openDatePicker(activeDate, function (newDate) {
+      activeDate = newDate;
+      dateKey = dateKeyFromDate(activeDate);
+      data = loadForDate(dateKey);
+      dateLabelEl.textContent = formatDate(activeDate);
+      render();
+    });
+  });
+
+  render();
+})();
+
+/* =====================================================================
+   CASH JOURNAL — read-only combined view. For each denomination, shows
+   the count saved in Kasse Count and the count saved in Exchange Money
+   side by side, plus their combined total. Also shows the saved Sales
+   Count (expandable), a weekly Cash Balance per Day grid, and a Total
+   Money in Store summary (cash total + weekly sales).
+   ===================================================================== */
+(function initCashJournal() {
+  var ROLL_COUNT = { 2: 25, 1: 25, 0.5: 40, 0.2: 40, 0.1: 40, 0.05: 50, 0.02: 50, 0.01: 50 };
+  function rollValue(v) { return +(v * ROLL_COUNT[v]).toFixed(2); }
+
+  // Same denominations as Exchange Money, plus which Kasse Count DENOMS
+  // index (0=0.01 ... 12=100, see initMoneyCounter) each single/bill maps
+  // to. Rolls have no Kasse equivalent (Kasse doesn't track rolls).
+  var FIELDS = [
+    { key: "bill100", label: "100er Bill", value: 100, kind: "bill", kasseIdx: 12 },
+    { key: "bill50", label: "50er Bill", value: 50, kind: "bill", kasseIdx: 11 },
+    { key: "bill20", label: "20er Bill", value: 20, kind: "bill", kasseIdx: 10 },
+    { key: "bill10", label: "10er Bill", value: 10, kind: "bill", kasseIdx: 9 },
+    { key: "bill5", label: "5er Bill", value: 5, kind: "bill", kasseIdx: 8 },
+    { key: "coin2s", label: "2\u20AC Singles", value: 2, kind: "single", kasseIdx: 7 },
+    { key: "coin2r", label: "2\u20AC Rolls", value: rollValue(2), kind: "roll", kasseIdx: null },
+    { key: "coin1s", label: "1\u20AC Singles", value: 1, kind: "single", kasseIdx: 6 },
+    { key: "coin1r", label: "1\u20AC Rolls", value: rollValue(1), kind: "roll", kasseIdx: null },
+    { key: "coin050s", label: "0,50er Singles", value: 0.5, kind: "single", kasseIdx: 5 },
+    { key: "coin050r", label: "0,50er Rolls", value: rollValue(0.5), kind: "roll", kasseIdx: null },
+    { key: "coin020s", label: "0,20er Singles", value: 0.2, kind: "single", kasseIdx: 4 },
+    { key: "coin020r", label: "0,20er Rolls", value: rollValue(0.2), kind: "roll", kasseIdx: null },
+    { key: "coin010s", label: "0,10er Singles", value: 0.1, kind: "single", kasseIdx: 3 },
+    { key: "coin010r", label: "0,10er Rolls", value: rollValue(0.1), kind: "roll", kasseIdx: null },
+    { key: "coin005s", label: "0,05er Singles", value: 0.05, kind: "single", kasseIdx: 2 },
+    { key: "coin005r", label: "0,05er Rolls", value: rollValue(0.05), kind: "roll", kasseIdx: null },
+    { key: "coin002r", label: "0,02er Rolls", value: rollValue(0.02), kind: "roll", kasseIdx: null },
+    { key: "coin001r", label: "0,01er Rolls", value: rollValue(0.01), kind: "roll", kasseIdx: null }
+  ];
+  var BILL_KEYS = ["bill100", "bill50", "bill20", "bill10", "bill5"];
+
+  function readKasseCounts(dk) {
+    try {
+      var saved = localStorage.getItem("moneycounter_kasse_v1:" + dk);
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  function readExchangeCounts(dk) {
+    try {
+      var saved = localStorage.getItem("exchangemoney:" + dk);
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        return parsed.counts || {};
+      }
+    } catch (e) {}
+    return {};
+  }
+
+  function kasseCountForField(kasseCounts, f) {
+    if (f.kasseIdx === null || f.kasseIdx === undefined) return null;
+    var v = kasseCounts[f.kasseIdx];
+    return typeof v === "number" && !isNaN(v) ? v : 0;
+  }
+
+  function exCountForField(exchangeCounts, f) {
+    var v = parseFloat(exchangeCounts[f.key]);
+    return isNaN(v) ? 0 : v;
+  }
+
+  function startOfWeek(date) {
+    var d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    var day = d.getDay();
+    var diff = (day === 0 ? -6 : 1) - day;
+    d.setDate(d.getDate() + diff);
+    return d;
+  }
+  var DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  function fmtDayDate(d) {
+    var dd = String(d.getDate()).padStart(2, "0");
+    var mm = String(d.getMonth() + 1).padStart(2, "0");
+    return dd + "/" + mm;
+  }
+
+  function dailySalesKeyFor(dk) { return "dailysales:" + dk; }
+  function loadDailySales(dk) {
+    try {
+      var v = localStorage.getItem(dailySalesKeyFor(dk));
+      return v === null ? "" : v;
+    } catch (e) { return ""; }
+  }
+  function saveDailySales(dk, val) {
+    try {
+      if (val === "") localStorage.removeItem(dailySalesKeyFor(dk));
+      else localStorage.setItem(dailySalesKeyFor(dk), val);
+    } catch (e) {}
+  }
+
+  function salesTotalForDate(dk) {
+    var map = loadHistoryMap("sales");
+    var entry = map[dk];
+    if (entry && typeof entry.total === "number" && !isNaN(entry.total)) return entry.total;
+    return null;
+  }
+
+  function salesBreakdownForDate(dk) {
+    var map = loadHistoryMap("sales");
+    var entry = map[dk];
+    return entry && entry.breakdown ? entry.breakdown : [];
+  }
+
+  function computeWeeklyTotal() {
+    var monday = startOfWeek(activeDate);
+    var t = 0;
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      var dk = dateKeyFromDate(d);
+      var salesTotal = salesTotalForDate(dk);
+      if (salesTotal !== null) { t += salesTotal; continue; }
+      var n = parseFloat(loadDailySales(dk));
+      if (!isNaN(n)) t += n;
+    }
+    return t;
+  }
+
+  function updateWeeklyTotal() {
+    var el = document.getElementById("dailySalesTotalVal");
+    if (el) el.textContent = computeWeeklyTotal().toFixed(2) + "\u20AC";
+  }
+
+  var SMARTSHEET_FORM_URL = "https://app.smartsheet.com/b/form/f8c5661b8587447daf0cfaa884aa4a4b";
+
+  var activeDate = new Date();
+  var dateKey = dateKeyFromDate(activeDate);
+  var salesExpanded = false;
+
+  var rowsEl = document.getElementById("rows-journal");
+  var dateLabelEl = document.getElementById("dateLabel-journal");
+  dateLabelEl.textContent = formatDate(activeDate);
+
+  function computeCashTotal() {
+    var kasseCounts = readKasseCounts(dateKey);
+    var exchangeCounts = readExchangeCounts(dateKey);
+    var t = 0;
+    FIELDS.forEach(function (f) {
+      var kc = kasseCountForField(kasseCounts, f) || 0;
+      var ec = exCountForField(exchangeCounts, f);
+      t += (kc + ec) * f.value;
+    });
+    return t;
+  }
+
+  function updateStoreTotal() {
+    var cashEl = document.getElementById("storeTotalCash-journal");
+    var salesEl = document.getElementById("storeTotalSales-journal");
+    var grandEl = document.getElementById("storeTotalGrand-journal");
+    var cash = computeCashTotal();
+    var weekly = computeWeeklyTotal();
+    if (cashEl) cashEl.textContent = cash.toFixed(2) + "\u20AC";
+    if (salesEl) salesEl.textContent = weekly.toFixed(2) + "\u20AC";
+    if (grandEl) grandEl.textContent = (cash + weekly).toFixed(2) + "\u20AC";
+  }
+
+  function renderSalesSummary(container) {
+    var wrap = document.createElement("div");
+    wrap.className = "ex-sales-summary" + (salesExpanded ? " expanded" : "");
+    wrap.setAttribute("role", "button");
+    wrap.setAttribute("tabindex", "0");
+
+    var top = document.createElement("div");
+    top.className = "ex-sales-summary-top";
+
+    var label = document.createElement("span");
+    label.className = "label";
+    label.textContent = "Sales Count \u2014 " + formatDate(activeDate);
+    top.appendChild(label);
+
+    var right = document.createElement("span");
+    right.className = "ex-sales-summary-right";
+    var value = document.createElement("span");
+    var salesTotal = salesTotalForDate(dateKey);
+    var breakdown = salesBreakdownForDate(dateKey);
+    if (salesTotal !== null) {
+      value.className = "value";
+      value.textContent = salesTotal.toFixed(2) + "\u20AC";
+    } else {
+      value.className = "value empty";
+      value.textContent = "Not saved yet";
+    }
+    right.appendChild(value);
+    if (breakdown.length > 0) {
+      var chevron = document.createElement("span");
+      chevron.className = "ex-sales-chevron";
+      chevron.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+      right.appendChild(chevron);
+    }
+    top.appendChild(right);
+    wrap.appendChild(top);
+
+    if (breakdown.length > 0) {
+      var drop = document.createElement("div");
+      drop.className = "ex-sales-summary-drop";
+      breakdown.forEach(function (d) {
+        var row = document.createElement("div");
+        row.className = "hd-row";
+        row.innerHTML = '<div class="hd-label">' + d.label + ' &times; ' + d.count + '</div><div class="hd-value">' + d.lineTotal.toFixed(2) + '\u20AC</div>';
+        drop.appendChild(row);
+      });
+      wrap.appendChild(drop);
+
+      var toggle = function () { salesExpanded = !salesExpanded; render(); };
+      wrap.addEventListener("click", toggle);
+      wrap.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+    }
+
+    container.appendChild(wrap);
+  }
+
+  function renderDailyBalanceRow(container) {
+    var rowWrap = document.createElement("div");
+    rowWrap.className = "daily-balance-row";
+
+    var monday = startOfWeek(activeDate);
+    var todayKey = dateKeyFromDate(new Date());
+
+    for (var i = 0; i < 7; i++) {
+      (function (i) {
+        var d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        var dk = dateKeyFromDate(d);
+
+        var card = document.createElement("div");
+        card.className = "day-card" + (dk === todayKey ? " is-today" : "");
+
+        var label = document.createElement("div");
+        label.className = "day-card-label";
+        label.textContent = DAY_SHORT[i] + " " + fmtDayDate(d);
+        card.appendChild(label);
+
+        var input = document.createElement("input");
+        input.type = "text";
+        input.inputMode = "decimal";
+        input.className = "day-card-input";
+        input.placeholder = "0.00";
+
+        var salesTotal = salesTotalForDate(dk);
+        if (salesTotal !== null) {
+          input.value = salesTotal.toFixed(2);
+          input.readOnly = true;
+          input.title = "From Sales Count";
+          input.classList.add("day-card-input--synced");
+        } else {
+          input.value = loadDailySales(dk);
+          input.addEventListener("input", function (e) {
+            var raw = e.target.value;
+            if (raw !== "" && !/^\d*\.?\d{0,2}$/.test(raw)) { e.target.value = loadDailySales(dk); return; }
+            saveDailySales(dk, raw);
+            updateWeeklyTotal();
+            updateStoreTotal();
+          });
+        }
+        card.appendChild(input);
+
+        rowWrap.appendChild(card);
+      })(i);
+    }
+
+    container.appendChild(rowWrap);
+
+    var dailyTotalRow = document.createElement("div");
+    dailyTotalRow.className = "ex-daily-total-row";
+    var dailyTotalLabel = document.createElement("div");
+    dailyTotalLabel.className = "ex-row-label";
+    dailyTotalLabel.textContent = "Weekly Sales Total";
+    dailyTotalRow.appendChild(dailyTotalLabel);
+    var dailyTotalValue = document.createElement("div");
+    dailyTotalValue.className = "ex-daily-total-value";
+    dailyTotalValue.id = "dailySalesTotalVal";
+    dailyTotalValue.textContent = computeWeeklyTotal().toFixed(2) + "\u20AC";
+    dailyTotalRow.appendChild(dailyTotalValue);
+    container.appendChild(dailyTotalRow);
+
+    var exportBtn = document.createElement("button");
+    exportBtn.type = "button";
+    exportBtn.className = "ex-export-btn";
+    exportBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg><span>Open Smartsheet Form</span>';
+    exportBtn.addEventListener("click", function () {
+      window.open(SMARTSHEET_FORM_URL, "_blank", "noopener");
+    });
+    container.appendChild(exportBtn);
+  }
+
+  function render() {
+    rowsEl.innerHTML = "";
+
+    renderSalesSummary(rowsEl);
+
+    var kasseCounts = readKasseCounts(dateKey);
+    var exchangeCounts = readExchangeCounts(dateKey);
+
+    var colsHeader = document.createElement("div");
+    colsHeader.className = "cj-cols-header";
+    colsHeader.innerHTML = '<span></span><span class="cj-col-kasse">Kasse</span><span class="cj-col-exchange">Exchange</span><span class="cj-col-total">Total</span>';
+    rowsEl.appendChild(colsHeader);
+
+    var billsTitle = document.createElement("div");
+    billsTitle.className = "ex-section-title";
+    billsTitle.textContent = "Bills";
+    rowsEl.appendChild(billsTitle);
+
+    FIELDS.forEach(function (f, idx) {
+      if (BILL_KEYS.indexOf(f.key) === -1 && idx === BILL_KEYS.length) {
+        var coinsTitle = document.createElement("div");
+        coinsTitle.className = "ex-section-title";
+        coinsTitle.textContent = "Coins";
+        rowsEl.appendChild(coinsTitle);
+      }
+
+      var kc = kasseCountForField(kasseCounts, f);
+      var ec = exCountForField(exchangeCounts, f);
+      var tCount = (kc || 0) + ec;
+
+      var row = document.createElement("div");
+      row.className = "cj-row" + (f.kind === "roll" ? " cj-row--roll" : "");
+
+      var labelWrap = document.createElement("div");
+      labelWrap.className = "cj-row-label";
+      var labelText = document.createElement("span");
+      labelText.textContent = f.label;
+      labelWrap.appendChild(labelText);
+      if (tCount > 0) {
+        var badge = document.createElement("span");
+        badge.className = "cj-auto-badge";
+        badge.textContent = "Auto";
+        labelWrap.appendChild(badge);
+      }
+      row.appendChild(labelWrap);
+
+      var kasseSpan = document.createElement("span");
+      kasseSpan.className = "cj-val cj-val-kasse";
+      kasseSpan.textContent = kc === null ? "\u2014" : String(kc);
+      row.appendChild(kasseSpan);
+
+      var exSpan = document.createElement("span");
+      exSpan.className = "cj-val cj-val-exchange";
+      exSpan.textContent = String(ec);
+      row.appendChild(exSpan);
+
+      var totalSpan = document.createElement("span");
+      totalSpan.className = "cj-val cj-val-total";
+      totalSpan.textContent = String(tCount);
+      row.appendChild(totalSpan);
+
+      rowsEl.appendChild(row);
+    });
+
+    var cashTotalRow = document.createElement("div");
+    cashTotalRow.className = "ex-cash-total-row";
+    var cashTotalLabel = document.createElement("span");
+    cashTotalLabel.className = "label";
+    cashTotalLabel.textContent = "Total";
+    cashTotalRow.appendChild(cashTotalLabel);
+    var cashTotalValue = document.createElement("span");
+    cashTotalValue.className = "value";
+    cashTotalValue.id = "totalVal-journal";
+    cashTotalValue.textContent = computeCashTotal().toFixed(2) + "\u20AC";
+    cashTotalRow.appendChild(cashTotalValue);
+    rowsEl.appendChild(cashTotalRow);
+
+    var dailyTitleRow = document.createElement("div");
+    dailyTitleRow.className = "ex-daily-title-row";
+    var dailyTitle = document.createElement("div");
+    dailyTitle.className = "ex-section-title";
+    dailyTitle.textContent = "Cash Balance per Day";
+    dailyTitleRow.appendChild(dailyTitle);
+
+    var dailyResetBtn = document.createElement("button");
+    dailyResetBtn.type = "button";
+    dailyResetBtn.className = "ex-daily-reset-btn";
+    dailyResetBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span>Reset</span>';
+    dailyResetBtn.addEventListener("click", function () {
+      if (!confirm("Reset Cash Balance per Day for this week? Days pulled from a saved Sales Count won't be affected. This cannot be undone.")) return;
+      var monday = startOfWeek(activeDate);
+      for (var i = 0; i < 7; i++) {
+        var d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        saveDailySales(dateKeyFromDate(d), "");
+      }
+      render();
+      showToast("Reset");
+    });
+    dailyTitleRow.appendChild(dailyResetBtn);
+    rowsEl.appendChild(dailyTitleRow);
+
+    renderDailyBalanceRow(rowsEl);
+
+    var storeTitle = document.createElement("div");
+    storeTitle.className = "ex-section-title";
+    storeTitle.textContent = "Total Money in Store";
+    rowsEl.appendChild(storeTitle);
+
+    var storeBox = document.createElement("div");
+    storeBox.className = "ex-store-total-box";
+    storeBox.innerHTML =
+      '<div class="ex-store-total-line"><span>Cash Total</span><span id="storeTotalCash-journal"></span></div>' +
+      '<div class="ex-store-total-line"><span>+ Weekly Sales Total</span><span id="storeTotalSales-journal"></span></div>' +
+      '<div class="ex-store-total-line ex-store-total-grand"><span>Total Money in Store</span><span id="storeTotalGrand-journal"></span></div>';
+    rowsEl.appendChild(storeBox);
+
+    updateStoreTotal();
+  }
+
+  function snapshotHistory() {
+    var kasseCounts = readKasseCounts(dateKey);
+    var exchangeCounts = readExchangeCounts(dateKey);
+    var breakdown = [];
+    FIELDS.forEach(function (f) {
+      var kc = kasseCountForField(kasseCounts, f);
+      var ec = exCountForField(exchangeCounts, f);
+      var t = (kc || 0) + ec;
+      if (t > 0) breakdown.push({ label: f.label, count: t, lineTotal: t * f.value });
+    });
+    saveHistoryEntry("cashjournal", dateKey, {
+      breakdown: breakdown,
+      total: computeCashTotal(),
+      savedAt: new Date().toISOString()
+    });
+  }
+
+  document.getElementById("saveBtn-journal").addEventListener("click", function () {
+    snapshotHistory();
+    showToast("Saved");
+  });
+
+  document.getElementById("shareBtn-journal").addEventListener("click", function () {
+    captureAndShare("cashjournal", "Cash Journal");
+  });
+
+  dateLabelEl.addEventListener("click", function () {
+    openDatePicker(activeDate, function (newDate) {
+      activeDate = newDate;
+      dateKey = dateKeyFromDate(activeDate);
+      salesExpanded = false;
+      dateLabelEl.textContent = formatDate(activeDate);
+      render();
+    });
+  });
+
+  render();
+})();
+
+/* =====================================================================
+   HISTORY SCREEN — list saved dates per counter, tap to see the breakdown
+   ===================================================================== */
+function fmtNumGeneric(n) { return n % 1 === 0 ? String(n) : n.toFixed(2); }
+
+var _historyDetailType = null;
+var _historyDetailDateKey = null;
+
+function openHistoryDetail(type, dateKey) {
+  var map = loadHistoryMap(type);
+  var entry = map[dateKey];
+  if (!entry) return;
+
+  _historyDetailType = type;
+  _historyDetailDateKey = dateKey;
+
+  var titleMap = { sales: "Sales Count", kasse: "Kasse Count", daily: "Daily Count", exchange: "Exchange Money", cashjournal: "Cash Journal" };
+  document.getElementById("historyDetailTitle").textContent = titleMap[type] || "Count";
+  document.getElementById("historyDetailDate").textContent = formatDate(dateFromKey(dateKey));
+
+  var rowsEl = document.getElementById("historyDetailRows");
+  var totalBar = document.getElementById("historyDetailTotalBar");
+  var totalVal = document.getElementById("historyDetailTotal");
+  rowsEl.innerHTML = "";
+
+  var breakdown = entry.breakdown || [];
+
+  if (type === "daily") {
+    totalBar.style.display = "none";
+    breakdown.forEach(function (item) {
+      var row = document.createElement("div");
+      row.className = "hd-row";
+      var valueText = fmtNumGeneric(item.total) + (item.ea ? " (EA " + item.ea + ")" : "");
+      row.innerHTML = '<div class="hd-label">' + item.label + '</div><div class="hd-value">' + valueText + '</div>';
+      rowsEl.appendChild(row);
+    });
+  } else {
+    totalBar.style.display = "flex";
+    totalVal.textContent = (entry.total || 0).toFixed(2) + "\u20AC";
+    breakdown.forEach(function (d) {
+      var row = document.createElement("div");
+      row.className = "hd-row";
+      row.innerHTML = '<div class="hd-label">' + d.label + ' &times; ' + d.count + '</div><div class="hd-value">' + d.lineTotal.toFixed(2) + '\u20AC</div>';
+      rowsEl.appendChild(row);
+    });
+  }
+
+  if (breakdown.length === 0) {
+    rowsEl.innerHTML = '<div class="hd-row"><div class="hd-label">Nothing entered</div></div>';
+  }
+
+
+
+  showScreen("history-detail");
+}
+
+document.getElementById("historyDetailDeleteBtn").addEventListener("click", function () {
+  if (!_historyDetailType || !_historyDetailDateKey) return;
+  var label = formatDate(dateFromKey(_historyDetailDateKey));
+  if (!confirm("Delete the saved " + label + " entry? This cannot be undone.")) return;
+  deleteHistoryEntry(_historyDetailType, _historyDetailDateKey);
+  if (window.__refreshHistoryList) window.__refreshHistoryList();
+  showScreen("history");
+});
+
+(function initHistoryScreen() {
+  var currentType = "sales";
+  var listEl = document.getElementById("historyList");
+  var emptyEl = document.getElementById("emptyMsg-history");
+  var tabsEl = document.getElementById("historyTabs");
+  var goToHistoryBtn = document.querySelector('[data-goto="history"]');
+
+  function fmtMoney(n) { return n.toFixed(2) + "\u20AC"; }
+
+  function renderList() {
+    var map = loadHistoryMap(currentType);
+    var keys = Object.keys(map).sort(function (a, b) { return a < b ? 1 : -1; }); // newest first
+    listEl.innerHTML = "";
+
+    if (keys.length === 0) {
+      listEl.style.display = "none";
+      emptyEl.style.display = "flex";
+      return;
+    }
+    listEl.style.display = "flex";
+    emptyEl.style.display = "none";
+
+    keys.forEach(function (key) {
+      var entry = map[key];
+      var d = dateFromKey(key);
+
+      var timeStr = "";
+      if (entry.savedAt) {
+        var sd = new Date(entry.savedAt);
+        if (!isNaN(sd.getTime())) timeStr = "Saved " + sd.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+      }
+
+      var valueStr;
+      if (currentType === "daily") {
+        var count = (entry.breakdown || []).length;
+        valueStr = count + (count === 1 ? " item" : " items");
+      } else {
+        valueStr = fmtMoney(entry.total || 0);
+      }
+
+      var row = document.createElement("div");
+      row.className = "history-row";
+
+      var mainBtn = document.createElement("button");
+      mainBtn.type = "button";
+      mainBtn.className = "history-row-main";
+      mainBtn.innerHTML =
+        '<div class="history-date-block">' +
+          '<div class="history-date">' + formatDate(d) + '</div>' +
+          (timeStr ? '<div class="history-time">' + timeStr + '</div>' : '') +
+        '</div>' +
+        '<div class="history-value">' + valueStr + '</div>' +
+        '<div class="history-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>';
+      mainBtn.addEventListener("click", function () { openHistoryDetail(currentType, key); });
+      row.appendChild(mainBtn);
+
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "history-delete";
+      delBtn.setAttribute("aria-label", "Delete this date");
+      delBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+      delBtn.addEventListener("click", function () {
+        if (!confirm("Delete the saved " + formatDate(d) + " entry? This cannot be undone.")) return;
+        deleteHistoryEntry(currentType, key);
+        renderList();
+      });
+      row.appendChild(delBtn);
+
+      listEl.appendChild(row);
+    });
+  }
+
+  tabsEl.addEventListener("click", function (e) {
+    var btn = e.target.closest(".history-tab");
+    if (!btn) return;
+    tabsEl.querySelectorAll(".history-tab").forEach(function (b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    currentType = btn.getAttribute("data-history-type");
+    renderList();
+  });
+
+  if (goToHistoryBtn) goToHistoryBtn.addEventListener("click", renderList);
+  window.__refreshHistoryList = renderList;
+})();
+
+/* =====================================================================
+   SHARE TO WHATSAPP — screenshot the saved counts and share as an image
+   ===================================================================== */
+(function () {
+  function todayLabel() {
+    var d = new Date();
+    return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  function captureAndShare(screenId, titleText) {
+    var screenEl = document.getElementById("view-" + screenId);
+    if (!window.html2canvas) { showToast("Sharing isn't available right now"); return; }
+    screenEl.classList.add("capturing");
+    html2canvas(screenEl, { backgroundColor: "#0b0e21", scale: 2 }).then(function (canvas) {
+      screenEl.classList.remove("capturing");
+      canvas.toBlob(function (blob) {
+        if (!blob) { showToast("Could not create image"); return; }
+        var fileName = titleText.replace(/\s+/g, "-") + "-" + todayLabel().replace(/\s+/g, "-") + ".png";
+        var file = new File([blob], fileName, { type: "image/png" });
+        var caption = titleText + " — " + todayLabel();
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: titleText, text: caption }).catch(function () {});
+        } else {
+          // Fallback for browsers without file-sharing support: download the
+          // screenshot, then open a WhatsApp chat so it can be attached manually.
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+          showToast("Image saved — attach it in WhatsApp");
+          window.open("https://wa.me/?text=" + encodeURIComponent(caption), "_blank");
+        }
+      }, "image/png");
+    }).catch(function () {
+      screenEl.classList.remove("capturing");
+      showToast("Screenshot failed");
+    });
+  }
+
+  document.getElementById("shareBtn-sales").addEventListener("click", function () {
+    captureAndShare("sales", "Sales Count");
+  });
+  document.getElementById("shareBtn-kasse").addEventListener("click", function () {
+    captureAndShare("kasse", "Kasse Count");
+  });
+  document.getElementById("shareBtn-daily").addEventListener("click", function () {
+    captureAndShare("daily", "Daily Count");
+  });
+})();
+</script>
+</body>
+</html>
